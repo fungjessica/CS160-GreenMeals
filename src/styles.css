@@ -1,38 +1,57 @@
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  #root {
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 1em;
-    font-family: sans-serif;
-    color: #333;
-    background-color: #f3e4d7;
-  }
-  
-  /* height of the container */
-  .leaflet-container {
-    height: 100vh;
-    width: 90%;
-    border-radius: 2rem;
-  }
-  
-  .cluster-icon {
-    background-color: #333;
-    height: 2em;
-    width: 2em;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    box-shadow: 0 0 0px 5px #fff;
-  }
-  
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: sans-serif;
+  background-color: white;
+}
+
+/* Green header stripe */
+.topbar {
+  width: 100%;
+  background-color: rgb(50, 214, 50);
+  padding: 1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white; /* make text white */
+}
+
+/* Left section */
+.header-left h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: white; /* ensure text is white */
+}
+
+/* Center section */
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* Search bar styling */
+.header-center input[type="text"] {
+  width: 50%;
+  max-width: 400px;
+  padding: 0.5em 1em;
+  border: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  outline: none;
+}
+
+/* Map container */
+.leaflet-container {
+  flex-grow: 1;
+  width: 90%;
+  margin: 1em auto;
+  border-radius: 2rem;
+}
