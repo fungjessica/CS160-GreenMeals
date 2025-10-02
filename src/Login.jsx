@@ -1,40 +1,43 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function Login({ onLogin }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+    const handleSubmit = (e) => {
+        e.preventDefault();
 
-    const response = await fetch("http://127.0.0.1:5000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
+        // Default user credentials
+        if (email === "admin@admin.admin" && password === "admin") {
+            onLogin(); 
+        } else {
+            setError("Invalid email or password");
+        }
+    };
 
-    const data = await response.json();
-    alert(data.message);
-  };
-
-  return (
-    <form onSubmit={handleLogin}>
-      <h2>Login</h2>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button type="submit">Login</button>
-    </form>
-  );
+    return (
+        <div style={{ textAlign: "center", marginTop: "5rem" }}>
+            <h2>Login</h2>
+            <form onSubmit={handleSubmit}>
+                <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                /><br /><br />
+                <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                /><br /><br />
+                <button type="submit">Login</button>
+            </form>
+            {error && <p style={{ color: "red" }}>{error}</p>}
+            <p>Default user: admin@admin.admin / admin</p>
+        </div>
+    );
 }
-
-export default Login;

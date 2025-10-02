@@ -1,12 +1,25 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import App from "./App";      // your map + search component
+import Login from "./Login";  // your login page
 
-const rootElement = document.getElementById("root");
-const root = createRoot(rootElement);
+function Main() {
+    const [loggedIn, setLoggedIn] = useState(false);
 
+    return (
+        <>
+            {!loggedIn ? (
+                <Login onLogin={() => setLoggedIn(true)} />
+            ) : (
+                <App />
+            )}
+        </>
+    );
+}
+
+const root = createRoot(document.getElementById("root"));
 root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+    <StrictMode>
+        <Main />
+    </StrictMode>
 );

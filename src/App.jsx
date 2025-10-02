@@ -42,7 +42,7 @@ export default function App() {
         }
     }, []);
 
-    // 🔍 Handle search (calls your Flask backend at /restaurants)
+    // Handle search (calls your Flask backend at /restaurants)
     const searchRestaurants = async (q) => {
         if (!q) return;
 
