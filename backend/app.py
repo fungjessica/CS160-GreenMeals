@@ -25,6 +25,31 @@ def get_restaurants():
     resp = requests.get(url, headers=headers, params=params)
     return jsonify(resp.json())
 
+# In-memory "database" for now
+users = {}
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if email in users:
+        return jsonify({"message": "User already exists"}), 400
+    
+    users[email] = password
+    return jsonify({"message": "Registration successful"}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if email not in users or users[email] != password:
+        return jsonify({"message": "Invalid credentials"}), 401
+    
+    return jsonify({"message": "Login successful"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

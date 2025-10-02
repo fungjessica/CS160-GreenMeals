@@ -20,14 +20,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white; /* make text white */
+  color: white;
 }
 
 /* Left section */
 .header-left h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: white; /* ensure text is white */
+  color: white;
 }
 
 /* Center section */
