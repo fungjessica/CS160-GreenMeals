@@ -1,7 +1,7 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";      // your map + search component
-import Login from "./Login";  // your login page
+import App from "./App";      // map + search component
+import Login from "./Login";  // login page
 
 function Main() {
     const [loggedIn, setLoggedIn] = useState(false);

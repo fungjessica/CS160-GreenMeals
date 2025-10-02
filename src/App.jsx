@@ -28,7 +28,7 @@ export default function App() {
         shadowSize: [41, 41],
     });
 
-    // Ask for user location (independent from login)
+    // Ask for user location
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -42,7 +42,7 @@ export default function App() {
         }
     }, []);
 
-    // Handle search (calls your Flask backend at /restaurants)
+    // Handle search (calls Flask backend at /restaurants)
     const searchRestaurants = async (q) => {
         if (!q) return;
 
