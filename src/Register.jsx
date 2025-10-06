@@ -1,43 +1,38 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import "./Login.css";
 
-export default function Login({ onLogin }) {
+export default function Register({ onRegister }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // For now, check against default admin
-        if (email === "admin@admin.admin" && password === "admin") {
-            onLogin(true);
-            alert("Welcome back, admin!");
-        } else {
-            alert("Invalid credentials!");
-        }
+        console.log("Registered:", email);
+        alert("Registered successfully!");
+        onRegister(); // switch back to login or map
     };
 
     return (
         <div className="login-container">
-            <div className="login-box">
-                <h1>GreenMeals Login</h1>
+            <div className ="login-box">
+                <h1>Green Meals Registration</h1>
                 <form onSubmit={handleSubmit}>
                     <input
                         type="email"
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                    />
+                    /><br /><br />
                     <input
                         type="password"
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button type="submit">Login</button>
+                    /><br /><br />
+                    <button type="submit">Register</button>
                 </form>
                 <p>
-                    Don’t have an account? <a href="/register">Register</a>
+                    Already have an account? <a href="/login">Login</a>
                 </p>
             </div>
         </div>
