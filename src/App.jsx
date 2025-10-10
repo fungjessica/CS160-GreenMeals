@@ -1,8 +1,10 @@
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "./styles.css";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import L from "leaflet";
+import Orders from "./Components/Orders";
 
 // Component to dynamically update map view
 function ChangeView({ center }) {
@@ -11,11 +13,14 @@ function ChangeView({ center }) {
     return null;
 }
 
-export default function App() {
+function MapPage() {
     // Default center = San Jose
     const [center, setCenter] = useState([37.3382, -121.8863]);
     const [query, setQuery] = useState("");
     const [restaurants, setRestaurants] = useState([]);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+    const navigate = useNavigate();
 
     const redIcon = new L.Icon({
         iconUrl:
@@ -40,6 +45,19 @@ export default function App() {
                 }
             );
         }
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
     }, []);
 
     // Handle search (calls Flask backend at /restaurants)
@@ -77,6 +95,37 @@ export default function App() {
                         }}
                     />
                 </div>
+                <div className="header-right" ref={dropdownRef}>
+                    <div className="profile-wrapper">
+                        <button
+                            className="profile-button"
+                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                            aria-haspopup="true"
+                            aria-expanded={dropdownOpen}
+                        >
+                            <img
+                                src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                                alt="Profile"
+                                width={32}
+                                height={32}
+                            />
+                        </button>
+                        {dropdownOpen && (
+                            <div className="profile-menu">
+                                <button className="menu-item" onClick={() => {}}>
+                                    Profile
+                                </button>
+                                <button className="menu-item" onClick={() => navigate("/orders")}>
+                                    Orders
+                                </button>
+                                <div className="divider" />
+                                <button className="menu-item" onClick={() => {}}>
+                                    Logout
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </header>
 
             <MapContainer center={center} zoom={13} style={{ height: "90vh" }}>
@@ -109,5 +158,16 @@ export default function App() {
                 ))}
             </MapContainer>
         </>
+    );
+}
+
+export default function App() {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<MapPage />} />
+                <Route path="/orders" element={<Orders />} />
+            </Routes>
+        </Router>
     );
 }
