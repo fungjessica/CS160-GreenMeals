@@ -1,17 +1,17 @@
 ﻿import React, { useState } from "react";
 import "./Login.css";
+import { useNavigate } from "react-router-dom";
 
-export default function Login({ onLogin }) {
+export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // For now, check against default admin
         if (email === "admin@admin.admin" && password === "admin") {
-            onLogin(true);
             alert("Welcome back, admin!");
+            navigate("/map"); // Redirect to map page
         } else {
             alert("Invalid credentials!");
         }
