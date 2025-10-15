@@ -46,7 +46,7 @@ const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
+  password: 'saeknsaekn123$', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
   database: 'too_good_to_go',
   waitForConnections: true,
   connectionLimit: 10, // Maximum of 10 concurrent database connections
