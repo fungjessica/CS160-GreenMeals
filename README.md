@@ -259,7 +259,4 @@ npm start         # frontend
 
 ---
 
-If you want, I can also **add a top “Quick Start in 5 commands” box** in the README that’s even faster for new team members. It would be a neat visual for your repo.  
-
-Do you want me to add that?
 ```
