@@ -46,7 +46,7 @@ const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '...', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
+  password: 'Ethan06032004*', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
   database: 'too_good_to_go',
   waitForConnections: true,
   connectionLimit: 10, // Maximum of 10 concurrent database connections
@@ -141,6 +141,39 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ============================================
+// YELP API ROUTES (Replaces Flask @app.route("/restaurants"))
+// ============================================
+
+/**
+ * GET /api/yelp/restaurants
+ * Equivalent to Flask: @app.route("/restaurants")
+ * Search for restaurants using Yelp API
+ * Parameters: q (search query), lat, lon, radius
+ */
+app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+  try {
+    const { q, lat, lon, radius = 5000 } = req.query;
+
+    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
+      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
+      params: {
+        term: q || 'restaurants',
+        latitude: lat,
+        longitude: lon,
+        radius: radius,
+        categories: 'restaurants,food',
+        limit: 20
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Yelp API error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch Yelp data' });
   }
 });
 

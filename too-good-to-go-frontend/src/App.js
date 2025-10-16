@@ -1,17 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, Filter, Clock, ShoppingBag, User, CheckCircle, XCircle, Plus, Edit, Trash2, LogOut, Map as MapIcon } from 'lucide-react';
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import './App.css';
+
+// Component to dynamically update map view
+function ChangeView({ center }) {
+  const map = useMap();
+  const prevCenterRef = useRef(center);
+
+  useEffect(() => {
+    if (
+      prevCenterRef.current[0] !== center[0] ||
+      prevCenterRef.current[1] !== center[1]
+    ) {
+      map.setView(center);
+      prevCenterRef.current = center;
+    }
+  }, [center, map]);
+
+  return null;
+}
+
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
-  
+  const API_BASE_URL = "http://localhost:3001/api";
+
+  const redIcon = new L.Icon({
+    iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+
   useEffect(() => {
     if (token) {
       loadUser();
     }
   }, [token]);
+
 
   const loadUser = async () => {
     try {
@@ -207,28 +241,34 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [userLocation, setUserLocation] = useState({ lat: 37.3382, lng: -121.8863 });
   const [showMap, setShowMap] = useState(false);
+  const [query, setQuery] = useState("");
+  const [center, setCenter] = useState([37.3382, -121.8863]);
+  const [markers, setMarkers] = useState([]);
+  const redIcon = new L.Icon({
+        iconUrl:
+            "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+        shadowUrl:
+            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+    });
 
   useEffect(() => {
     loadAllRestrictions();
     loadOrders();
-    getUserLocation();
   }, []);
 
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        () => {
-          console.log('Using default location');
-        }
-      );
-    }
-  };
+  useEffect(() => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCenter([pos.coords.latitude, pos.coords.longitude]);
+      }
+    );
+  }
+}, []);
 
   const loadAllRestrictions = async () => {
     try {
@@ -259,26 +299,12 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     }
   };
 
-  const searchRestaurants = async () => {
-    try {
-      const restrictionIds = user.dietaryRestrictions.map(r => r.id);
-      const params = new URLSearchParams({
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        radius: 10
-      });
-      
-      restrictionIds.forEach(id => params.append('restrictionIds', id));
-      
-      const response = await fetch(`${API_BASE_URL}/restaurants/search?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setRestaurants(data);
-    } catch (error) {
-      console.error('Error searching restaurants:', error);
-    }
+  const searchRestaurants = async (query) => {
+    // Example: Yelp or other API call
+    const results = await fetch(`/api/search?query=${query}`).then((r) => r.json());
+    setMarkers(results.map(r => ({ name: r.name, lat: r.lat, lng: r.lng })));
   };
+
 
   const searchYelpRestaurants = async () => {
     try {
@@ -471,184 +497,53 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   };
 
   const SearchTab = () => (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-bold mb-4">Find Restaurants</h2>
-        <div className="flex gap-4">
-          <button
-            onClick={searchRestaurants}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center"
-          >
-            <Filter className="w-5 h-5 mr-2" />
-            Search Our Restaurants
-          </button>
-          <button
-            onClick={searchYelpRestaurants}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 flex items-center"
-          >
-            <MapIcon className="w-5 h-5 mr-2" />
-            Discover Nearby (Yelp)
-          </button>
+  <div className="search-tab">
+      <header className="topbar">
+        <div className="header-left">
+          <h1 style={{ color: "white" }}>Map Search</h1>
         </div>
-        {user.dietaryRestrictions.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap mt-4">
-            <span>Filtering by:</span>
-            {user.dietaryRestrictions.map(r => (
-              <span key={r.id} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                {r.restriction_name}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {showMap && yelpRestaurants.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-bold mb-4">Nearby Restaurants (Yelp)</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {yelpRestaurants.map((rest, idx) => (
-              <div key={idx} className="border rounded-lg p-4">
-                <h4 className="font-bold">{rest.name}</h4>
-                <p className="text-sm text-gray-600">{rest.categories?.[0]?.title}</p>
-                <p className="text-sm">⭐ {rest.rating} ({rest.review_count} reviews)</p>
-                <p className="text-sm">{(rest.distance / 1000).toFixed(1)} km away</p>
-                <p className="text-xs text-gray-500">{rest.location?.address1}</p>
-              </div>
-            ))}
-          </div>
+        <div className="header-center">
+          <input
+            type="text"
+            placeholder="Search restaurants..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                searchRestaurants(query);
+              }
+            }}
+          />
         </div>
-      )}
+      </header>
+      <MapContainer center={center} zoom={13} style={{ height: "90vh" }}>
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {restaurants.map(restaurant => (
-          <div key={restaurant.id} className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold mb-2">{restaurant.name}</h3>
-            <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine_type}</p>
-            <div className="flex items-center text-gray-500 text-sm mb-4">
-              <MapPin className="w-4 h-4 mr-1" />
-              <span>{restaurant.distance?.toFixed(1)} km</span>
-            </div>
-            <button
-              onClick={() => loadMenu(restaurant.id)}
-              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-            >
-              View Menu
-            </button>
-          </div>
-        ))}
-      </div>
+      {/* User marker */}
+      <Marker position={center} icon={redIcon}>
+        <Popup>
+          {center[0] === 37.3382 && center[1] === -121.8863
+            ? "Default: San Jose"
+            : "You are here"}
+        </Popup>
+      </Marker>
 
-      {selectedRestaurant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">{selectedRestaurant.name}</h2>
-                <button onClick={() => { setSelectedRestaurant(null); setCart([]); }}>
-                  <XCircle className="w-8 h-8" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-4">Available Items</h3>
-              {menu.map(food => (
-                <div key={food.id} className="border rounded-lg p-4 mb-4 flex justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-lg">{food.name}</h4>
-                    <p className="text-gray-600 text-sm mb-2">{food.description}</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="line-through text-gray-400">${food.price}</span>
-                      <span className="text-green-600 font-bold">
-                        ${(food.price * (1 - food.discount_percent / 100)).toFixed(2)}
-                      </span>
-                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">
-                        {food.discount_percent}% off
-                      </span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {food.dietaryCompliance?.map(dc => (
-                        <span key={dc.id} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-                          {dc.restriction_name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => addToCart(food)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 ml-4"
-                  >
-                    Add
-                  </button>
-                </div>
-              ))}
-
-              {cart.length > 0 && (
-                <>
-                  <div className="border-t pt-6 mb-6">
-                    <h3 className="text-xl font-bold mb-4">Cart</h3>
-                    {cart.map(item => (
-                      <div key={item.id} className="flex justify-between mb-3 bg-gray-50 p-3 rounded">
-                        <div>
-                          <span className="font-semibold">{item.name}</span>
-                          <span className="ml-2">x{item.quantity}</span>
-                        </div>
-                        <span className="font-bold">
-                          ${(item.price * (1 - item.discount_percent / 100) * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                    <div className="text-right text-xl font-bold">
-                      Total: ${calculateTotal().toFixed(2)}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-xl font-bold mb-4">Select Pickup Time</h3>
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      min={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => {
-                        setSelectedDate(e.target.value);
-                        loadPickupSlots(selectedRestaurant.id, e.target.value);
-                        setSelectedSlot(null);
-                      }}
-                      className="mb-4 p-2 border rounded-lg"
-                    />
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                      {pickupSlots.map(slot => (
-                        <button
-                          key={slot.id}
-                          onClick={() => setSelectedSlot(slot)}
-                          disabled={slot.available_slots === 0}
-                          className={`p-3 rounded-lg border-2 ${
-                            selectedSlot?.id === slot.id ? 'border-blue-500 bg-blue-50' :
-                            slot.available_slots === 0 ? 'border-gray-300 bg-gray-100 opacity-50' :
-                            'border-gray-300'
-                          }`}
-                        >
-                          <div className="text-sm font-semibold">
-                            {new Date(slot.slot_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          <div className="text-xs">{slot.available_slots} left</div>
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={placeOrder}
-                      disabled={!selectedSlot}
-                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-                    >
-                      Place Order
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Restaurant markers */}
+      {restaurants.map((r) => (
+        <Marker
+          key={r.id}
+          position={[r.coordinates.latitude, r.coordinates.longitude]}
+        >
+          <Popup>
+            {r.name} <br /> ⭐ {r.rating} <br />
+            {r.location?.address1}
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
     </div>
   );
 
@@ -726,7 +621,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
           </div>
         </div>
       </nav>
-      <main className="py-8">
+      <main className={activeTab === 'search' ? 'py-0' : 'py-8'}>
         {activeTab === 'profile' && <ProfileTab />}
         {activeTab === 'search' && <SearchTab />}
         {activeTab === 'orders' && <OrdersTab />}
