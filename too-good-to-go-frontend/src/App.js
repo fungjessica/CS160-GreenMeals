@@ -303,13 +303,6 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     }
   };
 
-  const searchRestaurants = async (query) => {
-    // Example: Yelp or other API call
-    const results = await fetch(`/api/search?query=${query}`).then((r) => r.json());
-    setMarkers(results.map(r => ({ name: r.name, lat: r.lat, lng: r.lng })));
-  };
-
-
   const searchYelpRestaurants = async () => {
     try {
       const response = await fetch(
@@ -501,14 +494,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   };
 
   const SearchTab = () => (
-  <MapView 
-    center={center}
-    restaurants={restaurants}
-    redIcon={redIcon}
-    query={query}
-    setQuery={setQuery}
-    searchRestaurants={searchRestaurants}
-  />
+  <MapView token={token} />
 );
 
   const OrdersTab = () => (

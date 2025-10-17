@@ -166,7 +166,7 @@ app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
         longitude: lon,
         radius: radius,
         categories: 'restaurants,food',
-        limit: 20
+        limit: 10
       }
     });
 
@@ -291,7 +291,7 @@ app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
         longitude: lon,
         radius: radius, // Search radius in meters
         categories: 'restaurants,food',
-        limit: 20
+        limit: 10
       }
     });
 
@@ -603,7 +603,7 @@ app.get('/api/restaurants/search', authenticateToken, async (req, res) => {
       params.push(...ids, ids.length);
     }
     
-    query += ` HAVING distance < ? ORDER BY distance LIMIT 20`;
+    query += ` HAVING distance < ? ORDER BY distance LIMIT 10`;
     params.push(radius);
     
     const [restaurants] = await pool.query(query, params);
