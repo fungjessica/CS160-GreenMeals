@@ -6,13 +6,13 @@
 // - Restaurant and customer operations
 // - Order management
 // - Yelp API integration for restaurant discovery
+import express from 'express';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import mysql from 'mysql2/promise';
 
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const axios = require('axios');
+import axios from 'axios';
 
 const app = express();
 
@@ -46,7 +46,7 @@ const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '...', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
+  password: '02012002', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
   database: 'too_good_to_go',
   waitForConnections: true,
   connectionLimit: 10, // Maximum of 10 concurrent database connections
@@ -100,50 +100,46 @@ const isRestaurantOwner = (req, res, next) => {
  */
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role, restaurantId } = req.body;
-    
-    // Validate role is either 'customer' or 'restaurant'
+    const { name, email, password, phone, role } = req.body;
+
     if (!['customer', 'restaurant'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be customer or restaurant.' });
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
-    // Check if email is already registered
-    const [existing] = await pool.query(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
-
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Hash password using bcrypt (10 rounds)
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Insert new user into database
+    let restaurantId = null;
+    if (role === 'restaurant') {
+      const [restaurantResult] = await pool.query(
+        'INSERT INTO restaurants (name, address, phone) VALUES (?, ?, ?)',
+        [`${name}'s Restaurant`, 'Unknown address', phone]
+      );
+      restaurantId = restaurantResult.insertId;
+    }
+
     const [result] = await pool.query(
       'INSERT INTO users (name, email, password_hash, phone, role, restaurant_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, passwordHash, phone, role, restaurantId || null]
+      [name, email, passwordHash, phone, role, restaurantId]
     );
 
-    // Generate JWT token valid for 7 days
-    const token = jwt.sign(
-      { id: result.insertId, email, role, restaurantId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const userId = result.insertId;
+    const token = jwt.sign({ id: userId, email, role, restaurantId }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       message: 'Registration successful',
       token,
-      user: { id: result.insertId, name, email, role, restaurantId }
+      user: { id: userId, name, email, role, restaurantId }
     });
-  } catch (error) {
-    console.error('Registration error:', error);
+  } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 /**
  * POST /api/auth/login
  * Login existing user
@@ -159,7 +155,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid credentialss' });
     }
 
     const user = users[0];
@@ -173,7 +169,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, restaurantId: user.restaurant_id },
+      { id: user.id, email: user.email, role: user.role, restaurantd: user.restaurant_id },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -194,6 +190,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 /**
  * GET /api/auth/me

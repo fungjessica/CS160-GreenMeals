@@ -91,7 +91,7 @@ const AuthScreen = ({ setToken }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center mb-6 text-green-600">Too Good To Go</h1>
+        <h1 className="text-3xl font-bold text-center mb-6 text-green-600">Green Meals</h1>
         
         <div className="flex mb-6">
           <button
@@ -163,16 +163,6 @@ const AuthScreen = ({ setToken }) => {
                 <option value="restaurant">Restaurant Owner</option>
               </select>
 
-              {formData.role === 'restaurant' && (
-                <input
-                  type="number"
-                  placeholder="Restaurant ID (1-5)"
-                  value={formData.restaurantId}
-                  onChange={(e) => setFormData({...formData, restaurantId: e.target.value})}
-                  className="w-full p-3 border rounded-lg"
-                  required
-                />
-              )}
             </>
           )}
 
@@ -709,7 +699,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-green-600">Too Good To Go</h1>
+          <h1 className="text-2xl font-bold text-green-600">Green Meals</h1>
           <div className="flex gap-4">
             <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 rounded-lg ${activeTab === 'profile' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               Profile
@@ -1098,7 +1088,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-green-600">Too Good To Go</h1>
+            <h1 className="text-2xl font-bold text-green-600">Green Meals</h1>
             <p className="text-sm text-gray-600">Restaurant Dashboard - {restaurant?.name}</p>
           </div>
           <div className="flex gap-4">
