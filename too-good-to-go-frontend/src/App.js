@@ -3,7 +3,7 @@ import { Calendar, MapPin, Filter, Clock, ShoppingBag, User, CheckCircle, XCircl
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import './App.css';
+import MapView from "./MapView";
 
 // Component to dynamically update map view
 function ChangeView({ center }) {
@@ -254,7 +254,11 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCenter([pos.coords.latitude, pos.coords.longitude]);
+        const newLat = pos.coords.latitude;
+        const newLng = pos.coords.longitude;
+        if (newLat !== center[0] || newLng !== center[1]) {
+          setCenter([newLat, newLng]);
+        }
       }
     );
   }
@@ -288,13 +292,6 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
       console.error('Error updating restrictions:', error);
     }
   };
-
-  const searchRestaurants = async (query) => {
-    // Example: Yelp or other API call
-    const results = await fetch(`/api/search?query=${query}`).then((r) => r.json());
-    setMarkers(results.map(r => ({ name: r.name, lat: r.lat, lng: r.lng })));
-  };
-
 
   const searchYelpRestaurants = async () => {
     try {
@@ -487,55 +484,8 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   };
 
   const SearchTab = () => (
-  <div className="search-tab">
-      <header className="topbar">
-        <div className="header-left">
-          <h1 style={{ color: "white" }}>Map Search</h1>
-        </div>
-        <div className="header-center">
-          <input
-            type="text"
-            placeholder="Search restaurants..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                searchRestaurants(query);
-              }
-            }}
-          />
-        </div>
-      </header>
-      <MapContainer center={center} zoom={13} style={{ height: "90vh" }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
-      {/* User marker */}
-      <Marker position={center} icon={redIcon}>
-        <Popup>
-          {center[0] === 37.3382 && center[1] === -121.8863
-            ? "Default: San Jose"
-            : "You are here"}
-        </Popup>
-      </Marker>
-
-      {/* Restaurant markers */}
-      {restaurants.map((r) => (
-        <Marker
-          key={r.id}
-          position={[r.coordinates.latitude, r.coordinates.longitude]}
-        >
-          <Popup>
-            {r.name} <br /> ⭐ {r.rating} <br />
-            {r.location?.address1}
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-    </div>
-  );
+  <MapView token={token} />
+);
 
   const OrdersTab = () => (
     <div className="max-w-4xl mx-auto p-6">
