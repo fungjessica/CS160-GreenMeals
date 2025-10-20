@@ -36,6 +36,9 @@ app.use(express.json());
 // Secret key for JWT token generation (CHANGE THIS IN PRODUCTION!)
 const JWT_SECRET = 'your_jwt_secret_key_change_in_production';
 
+// Google Map API key
+const GOOGLE_MAPS_API_KEY =  "AIzaSyDyQkvnxEaHaWOJp10IuVtM-ilMT_nxoaM";
+
 // Yelp API key for restaurant discovery feature
 const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx2luw2QC11lDH9XV5EuySo0yimf_NGUOnLz1GyvUTRVWHK_IabIqFtPIgEPGufYkJfUaHYx';
 
@@ -46,7 +49,7 @@ const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
+  password: '02012002', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
   database: 'too_good_to_go',
   waitForConnections: true,
   connectionLimit: 10, // Maximum of 10 concurrent database connections
@@ -91,6 +94,40 @@ const isRestaurantOwner = (req, res, next) => {
 };
 
 // ============================================
+// YELP API INTEGRATION
+// ============================================
+
+/**
+ * GET /api/yelp/restaurants
+ * Search for restaurants using Yelp API
+ * Shows nearby restaurants on a map
+ * Requires authentication
+ */
+app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+  try {
+    const { q, lat, lon, radius = 5000 } = req.query;
+
+    // Call Yelp Fusion API
+    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
+      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
+      params: {
+        term: q || 'restaurants',
+        latitude: lat,
+        longitude: lon,
+        radius: radius, // Search radius in meters
+        categories: 'restaurants,food',
+        limit: 20
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Yelp API error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch Yelp data' });
+  }
+});
+
+// ============================================
 // AUTHENTICATION ROUTES
 // ============================================
 
@@ -120,6 +157,7 @@ app.post('/api/auth/register', async (req, res) => {
         [`${name}'s Restaurant`, 'Unknown address', phone]
       );
       restaurantId = restaurantResult.insertId;
+
     }
 
     const [result] = await pool.query(
@@ -141,39 +179,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// ============================================
-// YELP API ROUTES (Replaces Flask @app.route("/restaurants"))
-// ============================================
-
-/**
- * GET /api/yelp/restaurants
- * Equivalent to Flask: @app.route("/restaurants")
- * Search for restaurants using Yelp API
- * Parameters: q (search query), lat, lon, radius
- */
-app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
-  try {
-    const { q, lat, lon, radius = 5000 } = req.query;
-
-    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
-      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-      params: {
-        term: q || 'restaurants',
-        latitude: lat,
-        longitude: lon,
-        radius: radius,
-        categories: 'restaurants,food',
-        limit: 20
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Yelp API error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch Yelp data' });
-  }
-});
-
 
 /**
  * POST /api/auth/login
@@ -185,9 +190,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Find user by email
     const [users] = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, r.name AS restaurant_name
+       FROM users u
+       LEFT JOIN restaurants r ON u.restaurant_id = r.id
+       WHERE u.email = ?`,
       [email]
     );
+    
 
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid credentialss' });
@@ -204,7 +213,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, restaurantd: user.restaurant_id },
+      { id: user.id, email: user.email, role: user.role, restaurantId: user.restaurant_id },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -217,7 +226,8 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        restaurantId: user.restaurant_id
+        restaurantId: user.restaurant_id,
+        restaurantName: user.restaurant_name  // add this
       }
     });
   } catch (error) {
@@ -268,38 +278,65 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 });
 
 // ============================================
-// YELP API INTEGRATION
+// ADDING NEW PART
 // ============================================
 
+
 /**
- * GET /api/yelp/restaurants
- * Search for restaurants using Yelp API
- * Shows nearby restaurants on a map
+ * POST /api/restaurants
+ * Get restaurant's information from owners
  * Requires authentication
  */
-app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+app.put('/api/restaurant/update', authenticateToken, async (req, res) => {
   try {
-    const { q, lat, lon, radius = 5000 } = req.query;
+    const { name, address, cuisine_type, phone } = req.body;
 
-    // Call Yelp Fusion API
-    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
-      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-      params: {
-        term: q || 'restaurants',
-        latitude: lat,
-        longitude: lon,
-        radius: radius, // Search radius in meters
-        categories: 'restaurants,food',
-        limit: 20
+    // Restaurant ID is stored in token when user logged in
+    const restaurantId = req.user.restaurantId;
+
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'No restaurant found for this user' });
+    }
+
+    // Optionally use Google Geocoding API again if address changes
+    let latitude = null, longitude = null;
+    if (address) {
+      const geoRes = await axios.get(
+        'https://maps.googleapis.com/maps/api/geocode/json',
+        {
+          params: {
+            address: address,
+            key: GOOGLE_MAPS_API_KEY,
+          },
+        }
+      );
+
+      if (geoRes.data.status === 'OK') {
+        const location = geoRes.data.results[0].geometry.location;
+        latitude = location.lat;
+        longitude = location.lng;
       }
-    });
+    }
 
-    res.json(response.data);
-  } catch (error) {
-    console.error('Yelp API error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch Yelp data' });
+    // Update restaurant info
+    const [result] = await pool.query(
+      `UPDATE restaurants 
+       SET name=?, address=?, latitude=?, longitude=?, cuisine_type=?, phone=? 
+       WHERE id=?`,
+      [name, address, latitude, longitude, cuisine_type, phone, restaurantId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+
+
+    res.json({ message: 'Restaurant information updated successfully' });
+  } catch (err) {
+    console.error('Error updating restaurant:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // ============================================
 // DIETARY RESTRICTIONS (CUSTOMER FEATURES)

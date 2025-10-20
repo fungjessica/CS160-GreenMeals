@@ -234,6 +234,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState([37.3382, -121.8863]);
   const [markers, setMarkers] = useState([]);
+  
   const redIcon = new L.Icon({
         iconUrl:
             "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
@@ -622,12 +623,13 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
 
 // ============ RESTAURANT DASHBOARD ============
 const RestaurantDashboard = ({ user, token, handleLogout }) => {
-  const [activeTab, setActiveTab] = useState('inventory');
+  const [activeTab, setActiveTab] = useState('editInfo');
   const [inventory, setInventory] = useState([]);
   const [orders, setOrders] = useState([]);
   const [restaurant, setRestaurant] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [allRestrictions, setAllRestrictions] = useState([]);
+  const [showAddInfoModal, setShowAddInfoModal] = useState(false);
 
   useEffect(() => {
     loadRestaurant();
@@ -854,6 +856,81 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
     );
   };
 
+  const EditInfoTab = () => {
+    const [formData, setFormData] = useState({
+      name: restaurant?.name || '',
+      address: restaurant?.address || '',
+      cuisine_type: restaurant?.cuisine_type || '',
+      phone: restaurant?.phone || ''
+    });
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const response = await fetch(`${API_BASE_URL}/restaurant/update`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData)
+        });
+  
+        if (!response.ok) throw new Error('Failed to update');
+        alert('Restaurant information updated successfully!');
+        loadRestaurant(); // refresh data
+      } catch (error) {
+        console.error('Update error:', error);
+        alert('Error updating restaurant information');
+      }
+    };
+  
+    return (
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold mb-4">Edit Restaurant Information</h2>
+  
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Name"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+          />
+          <input
+            type="text"
+            placeholder="Address"
+            value={formData.address}
+            onChange={(e) => setFormData({...formData, address: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+          />
+          <input
+            type="text"
+            placeholder="Cuisine Type"
+            value={formData.cuisine_type}
+            onChange={(e) => setFormData({...formData, cuisine_type: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+          />
+          <input
+            type="text"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            className="w-full p-3 border rounded-lg"
+          />
+  
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+          >
+            Save Changes
+          </button>
+        </form>
+      </div>
+    );
+  };
+  
+  
   const InventoryTab = () => (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -984,9 +1061,15 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-green-600">Green Meals</h1>
-            <p className="text-sm text-gray-600">Restaurant Dashboard - {restaurant?.name}</p>
+            <p className="text-sm text-gray-600">Welcome, {restaurant?.name} !</p>
           </div>
           <div className="flex gap-4">
+          <button
+              onClick={() => setActiveTab('editInfo')}
+              className={`px-4 py-2 rounded-lg ${activeTab === 'editInfo' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            >
+              Edit Information
+            </button>
             <button
               onClick={() => setActiveTab('inventory')}
               className={`px-4 py-2 rounded-lg ${activeTab === 'inventory' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
@@ -1007,11 +1090,13 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
       </nav>
 
       <main className="py-8">
+        {activeTab === 'editInfo' && <EditInfoTab />}
         {activeTab === 'inventory' && <InventoryTab />}
         {activeTab === 'orders' && <OrdersTab />}
       </main>
 
       {showAddModal && <AddFoodModal />}
+      
     </div>
   );
 };
