@@ -28,13 +28,25 @@ CREATE TABLE `dietary_restrictions` (
   `restriction_type` enum('allergen','dietary_preference','religious') NOT NULL,
   `description` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `dietary_restrictions`
+--Default data for table `dietary_restrictions`
 --
---
+LOCK TABLES `dietary_restrictions` WRITE;
+INSERT INTO dietary_restrictions (restriction_name, restriction_type, description) VALUES
+('Gluten-Free', 'allergen', 'No gluten or wheat products'),
+('Dairy-Free', 'allergen', 'No dairy or lactose'),
+('Nut-Free', 'allergen', 'No nuts or nut-derived products'),
+('Shellfish-Free', 'allergen', 'No shellfish products'),
+('Vegan', 'dietary_preference', 'No animal products'),
+('Vegetarian', 'dietary_preference', 'No meat, may include dairy/eggs'),
+('Sugar-Free', 'dietary_preference', 'No sugar or sweeteners added'),
+('Low Sodium', 'dietary_preference', 'Reduced salt content'),
+('Halal', 'religious', 'Prepared according to Islamic law'),
+('Kosher', 'religious', 'Prepared according to Jewish law');
+UNLOCK TABLES;
 -- Table structure for table `food_dietary_compliance`
 --
 

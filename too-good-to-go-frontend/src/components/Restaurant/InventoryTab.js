@@ -21,6 +21,14 @@ const InventoryTab = ({
             <Plus className="w-5 h-5 mr-2" />
             Add Food Item
           </button>
+          {showAddModal && (
+          <AddFoodModal
+            token={token}
+            loadInventory={reload}   
+            setShowAddModal={setShowAddModal}
+            allRestrictions={allRestrictions}
+          />
+      )}
         </div>
   
         {inventory.length === 0 ? (
@@ -73,7 +81,9 @@ const InventoryTab = ({
               </div>
             ))}
           </div>
+          
         )}
+        
       </div>)
   }
 
