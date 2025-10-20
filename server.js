@@ -180,6 +180,125 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 
+// ============================================
+// YELP API ROUTES (Replaces Flask @app.route("/restaurants"))
+// ============================================
+
+/**
+ * GET /api/yelp/restaurants
+ * Search restaurants: first check local database, then add Yelp results
+ * Combines local restaurants within 10 miles matching the query with Yelp API results
+ */
+app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+  try {
+    const { q, lat, lon, radius = 5000 } = req.query;
+    const userLat = parseFloat(lat);
+    const userLon = parseFloat(lon);
+    
+    // 10 miles = 16,093 meters
+    const maxDistanceMeters = 16093;
+
+    // ============================================
+    // STEP 1: Search local database
+    // ============================================
+    const [dbRestaurants] = await pool.query(
+      `SELECT r.id, r.name, r.address, r.latitude, r.longitude, 
+              r.cuisine_type, r.phone, r.rating,
+              (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
+              cos(radians(r.longitude) - radians(?)) + 
+              sin(radians(?)) * sin(radians(r.latitude)))) AS distance_m
+       FROM restaurants r
+       WHERE (r.name LIKE ? OR r.cuisine_type LIKE ?)
+       AND (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
+            cos(radians(r.longitude) - radians(?)) + 
+            sin(radians(?)) * sin(radians(r.latitude)))) <= ?
+       ORDER BY distance_m ASC
+       LIMIT 10`,
+      [userLat, userLon, userLat, `%${q}%`, `%${q}%`, userLat, userLon, userLat, maxDistanceMeters]
+    );
+
+    // Format database results to match Yelp structure
+    const formattedDbRestaurants = dbRestaurants.map(r => ({
+      id: `db_${r.id}`,
+      name: r.name,
+      rating: parseFloat(r.rating),
+      coordinates: {
+        latitude: parseFloat(r.latitude),
+        longitude: parseFloat(r.longitude)
+      },
+      location: {
+        address1: r.address
+      },
+      phone: r.phone,
+      cuisine_type: r.cuisine_type,
+      source: 'database'
+    }));
+
+    // ============================================
+    // STEP 2: Search Yelp API
+    // ============================================
+    let yelpRestaurants = [];
+    try {
+      const yelpResponse = await axios.get('https://api.yelp.com/v3/businesses/search', {
+        headers: { Authorization: `Bearer ${YELP_API_KEY}` },
+        params: {
+          term: q || 'restaurants',
+          latitude: userLat,
+          longitude: userLon,
+          radius: Math.min(parseInt(radius), maxDistanceMeters),
+          categories: 'restaurants,food',
+          limit: 10
+        }
+      });
+
+      yelpRestaurants = (yelpResponse.data.businesses || []).map(r => ({
+        ...r,
+        source: 'yelp'
+      }));
+    } catch (yelpError) {
+      console.error('Yelp API error:', yelpError.response?.data || yelpError.message);
+      // Continue with just database results if Yelp fails
+    }
+
+    // ============================================
+    // STEP 3: Combine and deduplicate results
+    // ============================================
+    const allRestaurants = [...formattedDbRestaurants, ...yelpRestaurants];
+    
+    // Remove duplicates (same restaurant from both sources)
+    // Match by similar names and proximity
+    const seen = new Set();
+    const combined = allRestaurants.filter(r => {
+      const key = `${r.name.toLowerCase()}_${Math.round(r.coordinates.latitude * 100)}_${Math.round(r.coordinates.longitude * 100)}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by relevance (database first, then by distance)
+    combined.sort((a, b) => {
+      if (a.source === 'database' && b.source !== 'database') return -1;
+      if (a.source !== 'database' && b.source === 'database') return 1;
+      return (b.rating || 0) - (a.rating || 0);
+    });
+
+    res.json({
+      businesses: combined.slice(0, 10),
+      total: combined.length,
+      db_count: formattedDbRestaurants.length,
+      yelp_count: yelpRestaurants.length
+    });
+
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Failed to fetch restaurants' });
+  }
+});
+
+
+
 /**
  * POST /api/auth/login
  * Login existing user
@@ -290,7 +409,6 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.put('/api/restaurant/update', authenticateToken, async (req, res) => {
   try {
     const { name, address, cuisine_type, phone } = req.body;
-
     // Restaurant ID is stored in token when user logged in
     const restaurantId = req.user.restaurantId;
 
@@ -337,7 +455,29 @@ app.put('/api/restaurant/update', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+  try {
+    const { q, lat, lon, radius = 5000 } = req.query;
 
+    // Call Yelp Fusion API
+    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
+      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
+      params: {
+        term: q || 'restaurants',
+        latitude: lat,
+        longitude: lon,
+        radius: radius, // Search radius in meters
+        categories: 'restaurants,food',
+        limit: 10
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Yelp API error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch Yelp data' });
+  }
+});
 // ============================================
 // DIETARY RESTRICTIONS (CUSTOMER FEATURES)
 // ============================================
@@ -639,7 +779,7 @@ app.get('/api/restaurants/search', authenticateToken, async (req, res) => {
       params.push(...ids, ids.length);
     }
     
-    query += ` HAVING distance < ? ORDER BY distance LIMIT 20`;
+    query += ` HAVING distance < ? ORDER BY distance LIMIT 10`;
     params.push(radius);
     
     const [restaurants] = await pool.query(query, params);
