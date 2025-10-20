@@ -148,7 +148,7 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password.trim(), 10);
 
     let restaurantId = null;
     if (role === 'restaurant') {
@@ -205,10 +205,10 @@ app.post('/api/auth/login', async (req, res) => {
     const user = users[0];
     
     // Compare provided password with hashed password in database
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password.trim(), user.password_hash);
 
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Generate JWT token
