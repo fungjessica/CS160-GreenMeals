@@ -6,13 +6,13 @@
 // - Restaurant and customer operations
 // - Order management
 // - Yelp API integration for restaurant discovery
+import express from 'express';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import mysql from 'mysql2/promise';
 
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const axios = require('axios');
+import axios from 'axios';
 
 const app = express();
 
@@ -35,6 +35,9 @@ app.use(express.json());
 
 // Secret key for JWT token generation (CHANGE THIS IN PRODUCTION!)
 const JWT_SECRET = 'your_jwt_secret_key_change_in_production';
+
+// Google Map API key
+const GOOGLE_MAPS_API_KEY =  "AIzaSyDyQkvnxEaHaWOJp10IuVtM-ilMT_nxoaM";
 
 // Yelp API key for restaurant discovery feature
 const YELP_API_KEY = 'SeMVqOcTs3fB6lvE2mIdSsrn9KApbk7GKM5EAAQQiGpHiR9J2yfLW2J_fx2luw2QC11lDH9XV5EuySo0yimf_NGUOnLz1GyvUTRVWHK_IabIqFtPIgEPGufYkJfUaHYx';
@@ -100,71 +103,61 @@ const isRestaurantOwner = (req, res, next) => {
  */
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role, restaurantId } = req.body;
-    
-    // Validate role is either 'customer' or 'restaurant'
+    const { name, email, password, phone, role } = req.body;
+
     if (!['customer', 'restaurant'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be customer or restaurant.' });
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
-    // Check if email is already registered
-    const [existing] = await pool.query(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
-
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Hash password using bcrypt (10 rounds)
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password.trim(), 10);
 
-    // Insert new user into database
+    let restaurantId = null;
+    if (role === 'restaurant') {
+      const [restaurantResult] = await pool.query(
+        'INSERT INTO restaurants (name, address, phone) VALUES (?, ?, ?)',
+        [`${name}'s Restaurant`, 'Unknown address', phone]
+      );
+      restaurantId = restaurantResult.insertId;
+
+    }
+
     const [result] = await pool.query(
       'INSERT INTO users (name, email, password_hash, phone, role, restaurant_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, passwordHash, phone, role, restaurantId || null]
+      [name, email, passwordHash, phone, role, restaurantId]
     );
 
-    // Generate JWT token valid for 7 days
-    const token = jwt.sign(
-      { id: result.insertId, email, role, restaurantId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const userId = result.insertId;
+    const token = jwt.sign({ id: userId, email, role, restaurantId }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       message: 'Registration successful',
       token,
-      user: { id: result.insertId, name, email, role, restaurantId }
+      user: { id: userId, name, email, role, restaurantId }
     });
-  } catch (error) {
-    console.error('Registration error:', error);
+  } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // ============================================
 // YELP API ROUTES (Replaces Flask @app.route("/restaurants"))
 // ============================================
 
-/**
- * GET /api/yelp/restaurants
- * Search restaurants: first check local database, then add Yelp results
- * Combines local restaurants within 10 miles matching the query with Yelp API results
- */
 app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
   try {
     const { q, lat, lon, radius = 5000 } = req.query;
     const userLat = parseFloat(lat);
     const userLon = parseFloat(lon);
-    
-    // 10 miles = 16,093 meters
-    const maxDistanceMeters = 16093;
+    const maxDistanceMeters = 16093; // 10 miles
 
-    // ============================================
-    // STEP 1: Search local database
-    // ============================================
+    // STEP 1: Search database
     const [dbRestaurants] = await pool.query(
       `SELECT r.id, r.name, r.address, r.latitude, r.longitude, 
               r.cuisine_type, r.phone, r.rating,
@@ -181,11 +174,10 @@ app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
       [userLat, userLon, userLat, `%${q}%`, `%${q}%`, userLat, userLon, userLat, maxDistanceMeters]
     );
 
-    // Format database results to match Yelp structure
     const formattedDbRestaurants = dbRestaurants.map(r => ({
       id: `db_${r.id}`,
       name: r.name,
-      rating: parseFloat(r.rating),
+      rating: parseFloat(r.rating) || 0,
       coordinates: {
         latitude: parseFloat(r.latitude),
         longitude: parseFloat(r.longitude)
@@ -194,13 +186,11 @@ app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
         address1: r.address
       },
       phone: r.phone,
-      cuisine_type: r.cuisine_type,
+      categories: r.cuisine_type ? [{ title: r.cuisine_type }] : [],
       source: 'database'
     }));
 
-    // ============================================
-    // STEP 2: Search Yelp API
-    // ============================================
+    // STEP 2: Search Yelp (optional - uncomment if you want Yelp results too)
     let yelpRestaurants = [];
     try {
       const yelpResponse = await axios.get('https://api.yelp.com/v3/businesses/search', {
@@ -214,38 +204,22 @@ app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
           limit: 10
         }
       });
-
       yelpRestaurants = (yelpResponse.data.businesses || []).map(r => ({
         ...r,
         source: 'yelp'
       }));
     } catch (yelpError) {
       console.error('Yelp API error:', yelpError.response?.data || yelpError.message);
-      // Continue with just database results if Yelp fails
     }
 
-    // ============================================
-    // STEP 3: Combine and deduplicate results
-    // ============================================
+    //STEP 3: Combine
     const allRestaurants = [...formattedDbRestaurants, ...yelpRestaurants];
-    
-    // Remove duplicates (same restaurant from both sources)
-    // Match by similar names and proximity
     const seen = new Set();
     const combined = allRestaurants.filter(r => {
       const key = `${r.name.toLowerCase()}_${Math.round(r.coordinates.latitude * 100)}_${Math.round(r.coordinates.longitude * 100)}`;
-      if (seen.has(key)) {
-        return false;
-      }
+      if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    });
-
-    // Sort by relevance (database first, then by distance)
-    combined.sort((a, b) => {
-      if (a.source === 'database' && b.source !== 'database') return -1;
-      if (a.source !== 'database' && b.source === 'database') return 1;
-      return (b.rating || 0) - (a.rating || 0);
     });
 
     res.json({
@@ -271,21 +245,25 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Find user by email
     const [users] = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, r.name AS restaurant_name
+       FROM users u
+       LEFT JOIN restaurants r ON u.restaurant_id = r.id
+       WHERE u.email = ?`,
       [email]
     );
+    
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid credentialss' });
     }
 
     const user = users[0];
     
     // Compare provided password with hashed password in database
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password.trim(), user.password_hash);
 
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Generate JWT token
@@ -303,7 +281,8 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        restaurantId: user.restaurant_id
+        restaurantId: user.restaurant_id,
+        restaurantName: user.restaurant_name  // add this
       }
     });
   } catch (error) {
@@ -311,6 +290,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 /**
  * GET /api/auth/me
@@ -353,36 +333,61 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 });
 
 // ============================================
-// YELP API INTEGRATION
+// ADDING NEW PART
 // ============================================
 
+
 /**
- * GET /api/yelp/restaurants
- * Search for restaurants using Yelp API
- * Shows nearby restaurants on a map
+ * POST /api/restaurants
+ * Get restaurant's information from owners
  * Requires authentication
  */
-app.get('/api/yelp/restaurants', authenticateToken, async (req, res) => {
+app.put('/api/restaurant/update', authenticateToken, async (req, res) => {
   try {
-    const { q, lat, lon, radius = 5000 } = req.query;
+    const { name, address, cuisine_type, phone } = req.body;
+    // Restaurant ID is stored in token when user logged in
+    const restaurantId = req.user.restaurantId;
 
-    // Call Yelp Fusion API
-    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
-      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-      params: {
-        term: q || 'restaurants',
-        latitude: lat,
-        longitude: lon,
-        radius: radius, // Search radius in meters
-        categories: 'restaurants,food',
-        limit: 10
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'No restaurant found for this user' });
+    }
+
+    // Optionally use Google Geocoding API again if address changes
+    let latitude = null, longitude = null;
+    if (address) {
+      const geoRes = await axios.get(
+        'https://maps.googleapis.com/maps/api/geocode/json',
+        {
+          params: {
+            address: address,
+            key: GOOGLE_MAPS_API_KEY,
+          },
+        }
+      );
+
+      if (geoRes.data.status === 'OK') {
+        const location = geoRes.data.results[0].geometry.location;
+        latitude = location.lat;
+        longitude = location.lng;
       }
-    });
+    }
 
-    res.json(response.data);
-  } catch (error) {
-    console.error('Yelp API error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch Yelp data' });
+    // Update restaurant info
+    const [result] = await pool.query(
+      `UPDATE restaurants 
+       SET name=?, address=?, latitude=?, longitude=?, cuisine_type=?, phone=? 
+       WHERE id=?`,
+      [name, address, latitude, longitude, cuisine_type, phone, restaurantId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+
+
+    res.json({ message: 'Restaurant information updated successfully' });
+  } catch (err) {
+    console.error('Error updating restaurant:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

@@ -66,7 +66,7 @@ export default function MapView({ token }) {
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             const data = await response.json();
-            setRestaurants((data.businesses || []).slice(0, 10));
+            setRestaurants(data.businesses || []);
         } catch (error) {
             console.error('Error searching restaurants:', error);
         }
@@ -111,17 +111,17 @@ export default function MapView({ token }) {
 
                 {/* Restaurant markers */}
                 {restaurants && restaurants.map((r) => (
-                <Marker
-                    key={r.id}
-                    position={[r.coordinates.latitude, r.coordinates.longitude]}
-                    icon={defaultIcon}
-                >
-                    <Popup>
-                        {r.name} <br /> ⭐ {r.rating} <br />
-                        {r.location?.address1}
-                    </Popup>
-                </Marker>
-            ))}
+                    <Marker
+                        key={r.id}
+                        position={[r.coordinates.latitude, r.coordinates.longitude]}
+                        icon={defaultIcon}
+                    >
+                        <Popup>
+                            {r.name} <br /> ⭐ {r.rating} <br />
+                            {r.location?.address1}
+                        </Popup>
+                    </Marker>
+                ))}
             </MapContainer>
         </>
     );
