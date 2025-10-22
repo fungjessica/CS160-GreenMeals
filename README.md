@@ -3,7 +3,7 @@
 Before setting up the project, make sure you have the following installed:
 
 1. **Node.js (v23.11.0)**  
-   Verify installation:  
+   Verify installation:
    ```bash
    node --version
    ```
@@ -100,10 +100,10 @@ Open `server.js` and update:
 
 ```javascript
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'YOUR_MYSQL_PASSWORD_HERE',
-  database: 'too_good_to_go',
+  host: "localhost",
+  user: "root",
+  password: "YOUR_MYSQL_PASSWORD_HERE",
+  database: "too_good_to_go",
 });
 ```
 
@@ -216,7 +216,6 @@ npm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
 ```
 
 ---
-
 
 ## 🧰 Project Structure
 
