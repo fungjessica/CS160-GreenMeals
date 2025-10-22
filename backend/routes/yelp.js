@@ -53,7 +53,7 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
     const formattedDbRestaurants = dbRestaurants.map(r => ({
       id: `db_${r.id}`,
       name: r.name,
-      rating: parseFloat(r.rating),
+      rating: parseFloat(r.rating) || 0,
       coordinates: {
         latitude: parseFloat(r.latitude),
         longitude: parseFloat(r.longitude)
@@ -63,6 +63,7 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
       },
       phone: r.phone,
       cuisine_type: r.cuisine_type,
+      categories: r.cuisine_type ? [{ title: r.cuisine_type }] : [],
       distance: r.distance_m,
       source: 'database'
     }));
@@ -109,13 +110,6 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
       }
       seen.add(key);
       return true;
-    });
-
-    // Sort by relevance (database first, then by rating)
-    combined.sort((a, b) => {
-      if (a.source === 'database' && b.source !== 'database') return -1;
-      if (a.source !== 'database' && b.source === 'database') return 1;
-      return (b.rating || 0) - (a.rating || 0);
     });
 
     res.json({
