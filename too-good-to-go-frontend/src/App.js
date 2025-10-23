@@ -269,13 +269,49 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
 
   const loadOrders = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setOrders(data);
+      // temporary mock orders until backend works
+      const mockData = [
+        {
+          id: 1,
+          restaurant_name: "Sunny Café",
+          restaurant_address: "123 Sunshine Blvd",
+          status: "pending",
+          total_amount: 18.75,
+          slot_start: "2025-10-23T15:00:00",
+          items: [
+            { food_name: "Avocado Toast", quantity: 2 },
+            { food_name: "Iced Latte", quantity: 1 }
+          ]
+        },
+        {
+          id: 2,
+          restaurant_name: "Moonlight Sushi",
+          restaurant_address: "42 Ocean View Dr",
+          status: "completed",
+          total_amount: 32.50,
+          slot_start: "2025-10-21T19:30:00",
+          items: [
+            { food_name: "Spicy Tuna Roll", quantity: 1 },
+            { food_name: "Miso Soup", quantity: 2 }
+          ]
+        },
+        {
+          id: 3,
+          restaurant_name: "Veggie Haven",
+          restaurant_address: "88 Greenway St",
+          status: "cancelled",
+          total_amount: 12.00,
+          slot_start: "2025-10-19T12:00:00",
+          items: [
+            { food_name: "Tofu Wrap", quantity: 1 },
+            { food_name: "Smoothie", quantity: 1 }
+          ]
+        }
+      ];
+
+      setOrders(mockData);
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error("Error loading mock orders:", error);
     }
   };
 

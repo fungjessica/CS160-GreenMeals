@@ -4,7 +4,7 @@ import mysql from 'mysql2/promise';
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'saeknsaekn123$', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
+  password: 'blueT0@st', // ⚠️ UPDATE THIS WITH YOUR MYSQL PASSWORD
   database: 'too_good_to_go',
   waitForConnections: true,
   connectionLimit: 10, // Maximum of 10 concurrent database connections
