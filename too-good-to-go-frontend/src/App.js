@@ -94,6 +94,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   const [restaurants, setRestaurants] = useState([]);
   const [yelpRestaurants, setYelpRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -105,6 +106,10 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState([37.3382, -121.8863]);
   const [markers, setMarkers] = useState([]);
+  const handleRestaurantClick = (restaurantId) => {
+    setSelectedRestaurantId(restaurantId);
+    setActiveTab('restaurant-detail');
+  };
   
   const redIcon = new L.Icon({
         iconUrl:
@@ -356,16 +361,12 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
   };
 
   const SearchTab = () => (
-  selectedRestaurant ? (
-    <RestaurantDetailTab
-      restaurantId={selectedRestaurant.id}
-      onBack={() => setSelectedRestaurant(null)}
-    />
-  ) : (
-    <MapView token={token} onRestaurantClick={setSelectedRestaurant} />
-  )
-);
 
+    <MapView 
+      token={token} 
+      onRestaurantClick={handleRestaurantClick}
+    />
+  );
 
   const RestaurantDetailTab = ({ restaurantId, onBack }) => {
     const [restaurant, setRestaurant] = useState(null);
@@ -517,10 +518,16 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
           </div>
         </div>
       </nav>
-      <main className={activeTab === 'search' ? 'py-0' : 'py-8'}>
+     <main className={activeTab === 'search' ? 'py-0' : 'py-8'}>
         {activeTab === 'profile' && <ProfileTab />}
         {activeTab === 'search' && <SearchTab />}
         {activeTab === 'orders' && <OrdersTab />}
+        {activeTab === 'restaurant-detail' && selectedRestaurantId && (
+          <RestaurantDetailTab 
+            restaurantId={selectedRestaurantId}
+            onBack={() => setActiveTab('search')}
+          />
+        )}
       </main>
     </div>
   );
