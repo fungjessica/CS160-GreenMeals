@@ -17,7 +17,7 @@ function ChangeView({ center }) {
     return null;
 }
 
-export default function MapView({ token }) {
+export default function MapView({ token, onRestaurantClick }) {
     // Default center = San Jose
     const [center, setCenter] = useState([37.3382, -121.8863]);
     const [query, setQuery] = useState("");
@@ -66,6 +66,7 @@ export default function MapView({ token }) {
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             const data = await response.json();
+            console.log('Search results:', data); // Debug log
             setRestaurants(data.businesses || []);
         } catch (error) {
             console.error('Error searching restaurants:', error);
@@ -117,8 +118,61 @@ export default function MapView({ token }) {
                         icon={defaultIcon}
                     >
                         <Popup>
-                            {r.name} <br /> ⭐ {r.rating} <br />
-                            {r.location?.address1}
+                            <div style={{ minWidth: '200px' }}>
+                                <strong style={{ fontSize: '16px' }}>{r.name}</strong> <br />
+                                {r.source === 'database' && (
+                                    <span style={{ color: 'green', fontWeight: 'bold' }}>
+                                        📍 Local Restaurant<br />
+                                    </span>
+                                )}
+                                ⭐ {r.rating} <br />
+                                <span style={{ fontSize: '14px', color: '#666' }}>
+                                    {r.location?.address1 || r.address || 'Address not available'}
+                                </span>
+                                <br />
+                                
+                                {/* Show menu button if restaurant has food */}
+                                {r.available_items > 0 && r.db_id && (
+                                    <>
+                                        <span style={{ color: 'green', fontWeight: 'bold', fontSize: '14px' }}>
+                                            ✓ {r.available_items} items available
+                                        </span>
+                                        <br />
+                                        <button 
+                                            onClick={() => {
+                                                if (onRestaurantClick) {
+                                                    onRestaurantClick(r.db_id);
+                                                }
+                                            }}
+                                            style={{
+                                                marginTop: '10px',
+                                                padding: '8px 16px',
+                                                backgroundColor: '#10b981',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                width: '100%'
+                                            }}
+                                        >
+                                            View Menu →
+                                        </button>
+                                    </>
+                                )}
+                                
+                                {/* Show message for restaurants without food or Yelp restaurants */}
+                                {(!r.available_items || r.available_items === 0) && r.source === 'database' && (
+                                    <span style={{ color: '#999', fontSize: '12px' }}>
+                                        <br />No items currently available
+                                    </span>
+                                )}
+                                {r.source === 'yelp' && (
+                                    <span style={{ color: '#666', fontSize: '12px' }}>
+                                        <br />External restaurant (menu not available)
+                                    </span>
+                                )}
+                            </div>
                         </Popup>
                     </Marker>
                 ))}
