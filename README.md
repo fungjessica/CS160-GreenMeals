@@ -45,6 +45,9 @@ git checkout muyi
 
 ### Step 2: Set Up MySQL Database
 
+Step 2.0 
+Make sure to go to CS160-GreenMeals/backend/database/cs160.sql
+
 #### 2.1 Start the MySQL Server
 
 ```bash
