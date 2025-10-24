@@ -269,7 +269,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
 
   const loadOrders = async () => {
     try {
-      // temporary mock orders until backend works
+      // temporary mock orders 
       const mockData = [
         {
           id: 1,
@@ -403,7 +403,11 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
       ) : (
         <div className="space-y-4">
           {orders.map(order => (
-            <div key={order.id} className="bg-white rounded-lg shadow-md p-6">
+            <div
+            key={order.id}
+            data-order-id={order.id}
+            className="bg-white rounded-lg shadow-md p-6 relative"
+          >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-bold text-lg">{order.restaurant_name}</h3>
@@ -433,12 +437,20 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
               <div className="flex justify-between items-center pt-4 border-t mt-4">
                 <span className="font-bold text-lg">${order.total_amount}</span>
                 {order.status === 'pending' && (
-                  <button
-                    onClick={() => cancelOrder(order.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => cancelOrder(order.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                    >
+                      Cancel Order
+                    </button>
+                    <button
+                      onClick={() => handlePickupChange(order.id)}
+                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                    >
+                      Change Pickup Time
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -447,6 +459,76 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
       )}
     </div>
   );
+  
+/* order pickup time change logic */
+  
+  const handlePickupChange = (orderId) => {
+    const times = [];
+    for (let hour = 8; hour <= 22; hour++) {
+      for (let minute of [0, 30]) {
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+        const formatted = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+        times.push(formatted);
+      }
+    }
+
+    const orderElement = document.querySelector(`[data-order-id='${orderId}']`);
+    if (!orderElement) return;
+
+    document.querySelectorAll('.pickup-dropdown-container').forEach(el => el.remove());
+
+    const container = document.createElement('div');
+    container.className = 'pickup-dropdown-container';
+
+    const dropdown = document.createElement('select');
+    dropdown.className = 'pickup-dropdown';
+    dropdown.size = 6;
+
+    times.forEach(time => {
+      const option = document.createElement('option');
+      option.value = time;
+      option.textContent = time;
+      dropdown.appendChild(option);
+    });
+
+    const confirmButton = document.createElement('button');
+    confirmButton.textContent = 'Confirm';
+    confirmButton.className = 'pickup-confirm-button';
+
+    container.appendChild(dropdown);
+    container.appendChild(confirmButton);
+
+    orderElement.classList.add('relative');
+    orderElement.appendChild(container);
+
+    const handleClickOutside = (e) => {
+      if (!container.contains(e.target)) {
+        container.remove();
+        document.removeEventListener('click', handleClickOutside);
+      }
+    };
+
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
+    confirmButton.onclick = () => {
+      const selectedTime = dropdown.value;
+      container.remove();
+      document.removeEventListener('click', handleClickOutside);
+      if (!selectedTime) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const newSlot = `${today}T${selectedTime}`;
+      setOrders(orders.map(order =>
+        order.id === orderId
+          ? { ...order, slot_start: newSlot }
+          : order
+      ));
+      alert(`Pickup time updated to ${selectedTime}`);
+    };
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
