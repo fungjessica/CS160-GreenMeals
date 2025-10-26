@@ -17,11 +17,12 @@ function ChangeView({ center }) {
     return null;
 }
 
-export default function MapView({ token, onRestaurantClick }) {
+export default function MapView({ token, onRestaurantClick, userRestrictions = [] }) {
     // Default center = San Jose
     const [center, setCenter] = useState([37.3382, -121.8863]);
     const [query, setQuery] = useState("");
     const [restaurants, setRestaurants] = useState([]);
+    const [filterByRestrictions, setFilterByRestrictions] = useState(false);
 
     const redIcon = new L.Icon({
         iconUrl:
