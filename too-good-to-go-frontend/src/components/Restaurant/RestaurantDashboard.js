@@ -25,7 +25,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadRestaurant = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/my-restaurant`, {
+        const response = await fetch(`${API_BASE_URL}/restaurants/my-restaurant`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -37,7 +37,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadInventory = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/inventory`, {
+        const response = await fetch(`${API_BASE_URL}/restaurants/inventory`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -49,7 +49,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/orders`, {
+        const response = await fetch(`${API_BASE_URL}/restaurants/orders`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -73,7 +73,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const updateOrderStatus = async (orderId, status) => {
       try {
-        await fetch(`${API_BASE_URL}/restaurant/orders/${orderId}/status`, {
+        await fetch(`${API_BASE_URL}/restaurants/orders/${orderId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
       if (!window.confirm('Delete this item?')) return;
       
       try {
-        await fetch(`${API_BASE_URL}/restaurant/foods/${foodId}`, {
+        await fetch(`${API_BASE_URL}/restaurants/foods/${foodId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
