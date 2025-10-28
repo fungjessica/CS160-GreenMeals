@@ -360,13 +360,13 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     );
   };
 
-  const SearchTab = () => (
-
-    <MapView 
-      token={token} 
-      onRestaurantClick={handleRestaurantClick}
-    />
-  );
+const SearchTab = () => (
+  <MapView 
+    token={token} 
+    onRestaurantClick={handleRestaurantClick}
+    userRestrictions={user.dietaryRestrictions || []}
+  />
+);
 
   const RestaurantDetailTab = ({ restaurantId, onBack }) => {
     const [restaurant, setRestaurant] = useState(null);
