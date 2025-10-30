@@ -12,8 +12,10 @@ import config from './config/config.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import restaurantRoutes from './routes/restaurants.js';
-import orderRoutes from './routes/orders.js';
+import customerRoutes from './routes/customerRestaurants.js';
+import orderRoutes from './routes/orderRoutes.js';
 import yelpRoutes from './routes/yelp.js';
+
 
 const app = express();
 
@@ -32,7 +34,7 @@ app.use(express.json());
 
 // Request logging middleware (optional - helpful for debugging)
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  //console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
@@ -43,7 +45,8 @@ app.use((req, res, next) => {
 // Mount all routes with their base paths
 app.use('/api/auth', authRoutes);              // Authentication: /api/auth/*
 app.use('/api/users', userRoutes);             // User management: /api/users/*
-app.use('/api/restaurants', restaurantRoutes); // Restaurant operations: /api/restaurants/*
+app.use('/api/owner/restaurant', restaurantRoutes);
+app.use('/api/customer/restaurant', customerRoutes);
 app.use('/api/orders', orderRoutes);           // Order management: /api/orders/*
 app.use('/api/yelp', yelpRoutes);              // Yelp integration: /api/yelp/*
 
@@ -82,7 +85,8 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
-      restaurants: '/api/restaurants',
+      restaurants: '/api/restaurant',
+      customerRestaurants: '/api/customer/restaurant',
       orders: '/api/orders',
       yelp: '/api/yelp',
       health: '/api/health'
@@ -115,6 +119,7 @@ app.use((err, req, res, next) => {
     ...(isDevelopment && { stack: err.stack })
   });
 });
+
 
 // ============================================
 // START SERVER

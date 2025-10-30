@@ -41,7 +41,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setInventory(data);
+        setInventory(data.inventory || []);
       } catch (error) {
         console.error('Error loading inventory:', error);
       }
@@ -53,7 +53,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setOrders(data);
+        setOrders(data.orders || []);
       } catch (error) {
         console.error('Error loading orders:', error);
       }
@@ -73,7 +73,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const updateOrderStatus = async (orderId, status) => {
       try {
-        await fetch(`${API_BASE_URL}/restaurant/orders/${orderId}/status`, {
+        await fetch(`${API_BASE_URL}/restaurants/orders/${orderId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
