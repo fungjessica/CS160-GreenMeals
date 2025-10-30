@@ -6,7 +6,7 @@ import L from "leaflet";
 import './App.css';
 import AuthScreen from './components/Auth/AuthScreen';
 import RestaurantDashboard from './components/Restaurant/RestaurantDashboard';
-import SearchResTab from "./SearchResTab";
+import MapView from "./MapView";
 
 // Component to dynamically update map view
 function ChangeView({ center }) {
@@ -360,12 +360,12 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     );
   };
 
-const SearchTab = ({ user, token, dietaryRestrictions }) => (
-  <SearchResTab
-  token={token}
-  user={user}
-  dietaryRestrictions={user?.dietaryRestrictions || []}
-/>
+const SearchTab = () => (
+  <MapView 
+    token={token} 
+    onRestaurantClick={handleRestaurantClick}
+    userRestrictions={user.dietaryRestrictions || []}
+  />
 );
 
 

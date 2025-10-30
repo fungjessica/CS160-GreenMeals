@@ -23,6 +23,7 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
     const [query, setQuery] = useState("");
     const [restaurants, setRestaurants] = useState([]);
     const [filterByRestrictions, setFilterByRestrictions] = useState(false);
+    const [showMap, setShowMap] = useState(true);
 
     const redIcon = new L.Icon({
         iconUrl:
@@ -94,61 +95,122 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
 
     return (
         <>
-            <header>
-                <div  className="mb-4 flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="Search by name or cuisine..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                searchRestaurants(query);
-                            }
-                        }}
-                        className="flex-1 p-2 border rounded-lg"
-                    />
-                    <button
-                    type="submit"
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                    >
-                    Search
-                    </button>
-                </div>
-                <div className="header-right" style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px', 
-                    marginRight: '20px' 
-                }}>
-                    {userRestrictions.length > 0 && (
-                        <label style={{ 
-                            color: 'white', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px', 
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500'
-                        }}>
-                            <input
-                                type="checkbox"
-                                checked={filterByRestrictions}
-                                onChange={(e) => setFilterByRestrictions(e.target.checked)}
-                                style={{ 
-                                    width: '18px', 
-                                    height: '18px', 
-                                    cursor: 'pointer' 
-                                }}
-                            />
-                            <span>
-                                Filter by my dietary restrictions ({userRestrictions.length})
-                            </span>
-                        </label>
-                    )}
-                </div>
-            </header>
+       <header
+        style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+        }}
+        >
+        {/* green top bar */}
+        <div
+        style={{
+            backgroundColor: '#16a34a', // Tailwind green-600
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '10px 20px', // Adds left/right padding
+            fontWeight: '600',
+            fontSize: '26px',
+            width: '100%',
+        }}
+        >
+        <span>Map View</span>
 
+        <button
+            onClick={() => setShowMap(!showMap)}
+            style={{
+            backgroundColor: 'white',
+            color: '#16a34a',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '14px',
+            transition: '0.2s',
+            }}
+        >
+            {showMap ? 'Hide Map' : 'Show Map'}
+        </button>
+        </div>
+
+        {/* Search bar + button */}
+        <div
+            className="mb-2 flex gap-2"
+            style={{
+            display: 'flex',
+            gap: '10px',
+            paddingLeft: '20px',
+            paddingRight: '20px',
+            alignItems: 'center',
+            }}
+        >
+            <input
+            type="text"
+            placeholder="Search by name or cuisine..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                searchRestaurants(query);
+                }
+            }}
+            className="flex-1 p-2 border rounded-lg"
+            />
+            <button
+            type="submit"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+            >
+            Search
+            </button>
+        </div>
+
+        {/* Checkbox */}
+        <div
+            className="header-right"
+            style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            marginRight: '20px',
+            marginTop: '5px',
+            marginBottom: '10px',
+            }}
+        >
+            {userRestrictions.length > 0 && (
+            <label
+                style={{
+                color: 'black',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                }}
+            >
+                <input
+                type="checkbox"
+                checked={filterByRestrictions}
+                onChange={(e) => setFilterByRestrictions(e.target.checked)}
+                style={{
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer',
+                }}
+                />
+                <span>
+                Filter by my dietary restrictions ({userRestrictions.length})
+                </span>
+            </label>
+            )}
+        </div>
+
+        </header>
+            {/* Conditionally render your MapContainer */}
+            {showMap && (
             <MapContainer center={center} zoom={13} style={{ height: "90vh" }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -237,6 +299,49 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
                     </Marker>
                 ))}
             </MapContainer>
+            )}
+            {!showMap && (<div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '16px',
+            padding: '20px',
+            backgroundColor: '#f8fafc', // Tailwind slate-50
+          }}
+        >
+          {restaurants.length > 0 ? (
+            restaurants.map((restaurant) => (
+              <div
+                key={restaurant.id}
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
+                  {restaurant.name}
+                </h2>
+                <p style={{ fontSize: '14px', color: '#4b5563' }}>{restaurant.address}</p>
+                <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '500', marginTop: '8px' }}>
+                  {restaurant.cuisine || 'Cuisine type not specified'}
+                </p>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                  Rating: {restaurant.rating ? restaurant.rating.toFixed(1) : 'N/A'}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p style={{ textAlign: 'center', gridColumn: '1 / -1', color: '#6b7280' }}>
+              No restaurants found.
+            </p>
+          )}
+        </div>)}
+
         </>
     );
 }
