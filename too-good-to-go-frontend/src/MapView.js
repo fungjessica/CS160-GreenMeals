@@ -44,6 +44,15 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
         shadowSize: [41, 41],
     });
 
+    const yellowIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+    });
+
     // Ask for user location
     useEffect(() => {
         if (navigator.geolocation) {
@@ -85,14 +94,11 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
 
     return (
         <>
-            <header className="topbar">
-                <div className="header-left">
-                    <h1 style={{ color: "white" }}>Map Search</h1>
-                </div>
-                <div className="header-center">
+            <header>
+                <div  className="mb-4 flex gap-2">
                     <input
                         type="text"
-                        placeholder="Search restaurants..."
+                        placeholder="Search by name or cuisine..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={(e) => {
@@ -100,7 +106,14 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
                                 searchRestaurants(query);
                             }
                         }}
+                        className="flex-1 p-2 border rounded-lg"
                     />
+                    <button
+      type="submit"
+      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+    >
+      Search
+    </button>
                 </div>
                 <div className="header-right" style={{ 
                     display: 'flex', 
@@ -157,7 +170,7 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
                     <Marker
                         key={r.id}
                         position={[r.coordinates.latitude, r.coordinates.longitude]}
-                        icon={defaultIcon}
+                        icon={r.source === 'database' ? yellowIcon : defaultIcon}
                     >
                         <Popup>
                             <div style={{ minWidth: '200px' }}>
