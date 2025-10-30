@@ -109,11 +109,11 @@ export default function MapView({ token, onRestaurantClick, userRestrictions = [
                         className="flex-1 p-2 border rounded-lg"
                     />
                     <button
-      type="submit"
-      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-    >
-      Search
-    </button>
+                    type="submit"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                    Search
+                    </button>
                 </div>
                 <div className="header-right" style={{ 
                     display: 'flex', 
