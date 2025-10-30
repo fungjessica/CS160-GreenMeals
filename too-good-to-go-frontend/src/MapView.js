@@ -17,11 +17,12 @@ function ChangeView({ center }) {
     return null;
 }
 
-export default function MapView({ token, onRestaurantClick }) {
+export default function MapView({ token, onRestaurantClick, userRestrictions = [] }) {
     // Default center = San Jose
     const [center, setCenter] = useState([37.3382, -121.8863]);
     const [query, setQuery] = useState("");
     const [restaurants, setRestaurants] = useState([]);
+    const [filterByRestrictions, setFilterByRestrictions] = useState(false);
 
     const redIcon = new L.Icon({
         iconUrl:
@@ -61,12 +62,21 @@ export default function MapView({ token, onRestaurantClick }) {
         if (!searchQuery) return;
         
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/yelp/restaurants?q=${searchQuery}&lat=${center[0]}&lon=${center[1]}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
+            // Build URL with dietary restrictions if enabled
+            let url = `${API_BASE_URL}/yelp/restaurants?q=${searchQuery}&lat=${center[0]}&lon=${center[1]}`;
+            
+            // Add dietary restriction filtering if enabled and user has restrictions
+            if (filterByRestrictions && userRestrictions.length > 0) {
+                const restrictionIds = userRestrictions.map(r => r.id).join(',');
+                url += `&restrictionIds=${restrictionIds}`;
+                console.log('Searching with restrictions:', restrictionIds);
+            }
+            
+            const response = await fetch(url, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
             const data = await response.json();
-            console.log('Search results:', data); // Debug log
+            console.log('Search results:', data);
             setRestaurants(data.businesses || []);
         } catch (error) {
             console.error('Error searching restaurants:', error);
@@ -91,6 +101,38 @@ export default function MapView({ token, onRestaurantClick }) {
                             }
                         }}
                     />
+                </div>
+                <div className="header-right" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    marginRight: '20px' 
+                }}>
+                    {userRestrictions.length > 0 && (
+                        <label style={{ 
+                            color: 'white', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={filterByRestrictions}
+                                onChange={(e) => setFilterByRestrictions(e.target.checked)}
+                                style={{ 
+                                    width: '18px', 
+                                    height: '18px', 
+                                    cursor: 'pointer' 
+                                }}
+                            />
+                            <span>
+                                Filter by my dietary restrictions ({userRestrictions.length})
+                            </span>
+                        </label>
+                    )}
                 </div>
             </header>
 
@@ -123,6 +165,11 @@ export default function MapView({ token, onRestaurantClick }) {
                                 {r.source === 'database' && (
                                     <span style={{ color: 'green', fontWeight: 'bold' }}>
                                         📍 Local Restaurant<br />
+                                    </span>
+                                )}
+                                {r.matches_restrictions && (
+                                    <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '13px' }}>
+                                        ✓ Matches your dietary needs<br />
                                     </span>
                                 )}
                                 ⭐ {r.rating} <br />

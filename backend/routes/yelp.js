@@ -23,30 +23,59 @@ const router = express.Router();
  */
 router.get('/restaurants', authenticateToken, async (req, res) => {
   try {
-    const { q, lat, lon, radius = 5000 } = req.query;
+    const { q, lat, lon, radius = 5000, restrictionIds } = req.query;
     const userLat = parseFloat(lat);
     const userLon = parseFloat(lon);
-    const maxDistanceMeters = 16093;
+    const maxDistanceMeters = 16093; // 10 miles
 
-    // STEP 1: Search database WITH food count
-    const [dbRestaurants] = await pool.query(
-      `SELECT r.id, r.name, r.address, r.latitude, r.longitude, 
-              r.cuisine_type, r.phone, r.rating,
-              (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
-              cos(radians(r.longitude) - radians(?)) + 
-              sin(radians(?)) * sin(radians(r.latitude)))) AS distance_m,
-              (SELECT COUNT(*) FROM foods f WHERE f.restaurant_id = r.id AND f.available_quantity > 0) as available_items
-       FROM restaurants r
-       WHERE (r.name LIKE ? OR r.cuisine_type LIKE ?)
-       AND (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
-            cos(radians(r.longitude) - radians(?)) + 
-            sin(radians(?)) * sin(radians(r.latitude)))) <= ?
-       HAVING available_items > 0
-       ORDER BY distance_m ASC
-       LIMIT 10`,
-      [userLat, userLon, userLat, `%${q}%`, `%${q}%`, userLat, userLon, userLat, maxDistanceMeters]
-    );
+    // Parse restriction IDs if provided
+    const restrictions = restrictionIds ? restrictionIds.split(',').map(id => parseInt(id)) : [];
 
+    // ============================================
+    // STEP 1: Search local database
+    // ============================================
+    let dbQuery = `
+      SELECT r.id, r.name, r.address, r.latitude, r.longitude, 
+             r.cuisine_type, r.phone, r.rating,
+             (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
+             cos(radians(r.longitude) - radians(?)) + 
+             sin(radians(?)) * sin(radians(r.latitude)))) AS distance_m,
+             (SELECT COUNT(*) FROM foods f WHERE f.restaurant_id = r.id AND f.available_quantity > 0) as available_items
+      FROM restaurants r
+      WHERE (r.name LIKE ? OR r.cuisine_type LIKE ?)
+      AND (6371000 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
+           cos(radians(r.longitude) - radians(?)) + 
+           sin(radians(?)) * sin(radians(r.latitude)))) <= ?
+    `;
+
+    const params = [
+      userLat, userLon, userLat, 
+      `%${q}%`, `%${q}%`, 
+      userLat, userLon, userLat, 
+      maxDistanceMeters
+    ];
+
+    // Add dietary restriction filtering if restrictions are provided
+    if (restrictions.length > 0) {
+      dbQuery += `
+        AND r.id IN (
+          SELECT DISTINCT f.restaurant_id
+          FROM foods f
+          JOIN food_dietary_compliance fdc ON f.id = fdc.food_id
+          WHERE fdc.restriction_id IN (${restrictions.map(() => '?').join(',')})
+          AND f.available_quantity > 0
+          GROUP BY f.restaurant_id, f.id
+          HAVING COUNT(DISTINCT fdc.restriction_id) = ?
+        )
+      `;
+      params.push(...restrictions, restrictions.length);
+    }
+
+    dbQuery += ` ORDER BY distance_m ASC LIMIT 10`;
+
+    const [dbRestaurants] = await pool.query(dbQuery, params);
+
+    // Format database results to match Yelp structure
     const formattedDbRestaurants = dbRestaurants.map(r => ({
       id: `db_${r.id}`,
       db_id: r.id, // Store the actual database ID for linking
@@ -57,13 +86,16 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
         longitude: parseFloat(r.longitude)
       },
       location: {
-        address1: r.address
+        address1: r.address,
+        city: r.address.split(',')[1]?.trim() || '',
+        state: r.address.split(',')[2]?.trim().split(' ')[0] || ''
       },
       phone: r.phone,
       categories: r.cuisine_type ? [{ title: r.cuisine_type }] : [],
       available_items: r.available_items,
       source: 'database',
-      has_menu: true // Flag to show this restaurant has a menu
+      has_menu: true,
+      matches_restrictions: restrictions.length > 0 // Flag if filtered by restrictions
     }));
 
     // ============================================
@@ -85,7 +117,8 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
 
       yelpRestaurants = (yelpResponse.data.businesses || []).map(r => ({
         ...r,
-        source: 'yelp'
+        source: 'yelp',
+        matches_restrictions: false // Yelp results don't have our dietary data
       }));
     } catch (yelpError) {
       console.error('Yelp API error:', yelpError.response?.data || yelpError.message);
@@ -110,11 +143,27 @@ router.get('/restaurants', authenticateToken, async (req, res) => {
       return true;
     });
 
+    // Sort: database restaurants first (especially ones matching restrictions), then by rating
+    combined.sort((a, b) => {
+      // Prioritize restaurants matching restrictions
+      if (a.matches_restrictions && !b.matches_restrictions) return -1;
+      if (!a.matches_restrictions && b.matches_restrictions) return 1;
+      
+      // Then prioritize database restaurants
+      if (a.source === 'database' && b.source !== 'database') return -1;
+      if (a.source !== 'database' && b.source === 'database') return 1;
+      
+      // Finally sort by rating
+      return (b.rating || 0) - (a.rating || 0);
+    });
+
     res.json({
       businesses: combined.slice(0, 10),
       total: combined.length,
       db_count: formattedDbRestaurants.length,
-      yelp_count: yelpRestaurants.length
+      yelp_count: yelpRestaurants.length,
+      filtered_by_restrictions: restrictions.length > 0,
+      restriction_ids: restrictions
     });
 
   } catch (error) {
