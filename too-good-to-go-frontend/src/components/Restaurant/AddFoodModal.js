@@ -19,7 +19,7 @@ const AddFoodModal = ({ token,loadInventory,setShowAddModal,allRestrictions}) =>
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
-        await fetch(`${API_BASE_URL}/restaurant/foods`, {
+        await fetch(`${API_BASE_URL}/owner/restaurant/foods`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
