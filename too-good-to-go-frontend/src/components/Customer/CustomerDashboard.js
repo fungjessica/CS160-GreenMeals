@@ -144,6 +144,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
       ...food,
       restaurant_id: restaurant?.id,
       restaurant_name: restaurant?.name || 'Unknown Restaurant',
+      discounted_price: Number((food.price * (1 - (food.discount_percent || 0) / 100)).toFixed(2)),
     };
   
     const existing = cart.find(

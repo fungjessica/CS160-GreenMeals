@@ -53,7 +53,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setOrders(data.orders || []);
+        setOrders(Array.isArray(data) ? data : data.orders || []);
       } catch (error) {
         console.error('Error loading orders:', error);
       }

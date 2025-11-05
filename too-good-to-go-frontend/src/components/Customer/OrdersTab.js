@@ -31,7 +31,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
       };
     }
     acc[key].items.push(item);
-    acc[key].subtotal += item.price * item.quantity;
+    acc[key].subtotal += (item.price * (1 - (item.discount_percent || 0) / 100)) * item.quantity;
     return acc;
   }, {});
 
@@ -82,7 +82,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
       // Reload orders from backend
       loadOrders();
   
-      alert("🎉 Checkout successful! Your orders have been placed.");
+      alert("🎉 Order successfully placed!.");
   
     } catch (error) {
       console.error("Error during checkout:", error);
@@ -166,7 +166,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
                   {order.items.map((item, i) => (
                     <div key={i} className="flex justify-between py-1">
                       <span>{item.food_name} × {item.quantity}</span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                      <span>${((item.discounted_price ?? item.price) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -175,12 +175,6 @@ const OrdersTab = ({ cart, setCart, token }) => {
                   <span>Status: {order.status}</span>
                   <div className="flex items-center gap-3">
                     <span>Total: ${Number(order.total_amount).toFixed(2)}</span>
-                    {order.status === "pending" && (
-                      <button
-                        onClick={() => handlePay(order.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
-                        Pay
-                      </button>)}
   </div>
 </div>
               </div>
