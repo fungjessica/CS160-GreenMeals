@@ -99,7 +99,7 @@ npm install
 
 #### 3.1 Update Database Credentials
 
-Open `server.js` and update:
+Open `/backend/config/database.js` and update:
 
 ```javascript
 const pool = mysql.createPool({
