@@ -193,6 +193,7 @@ DROP TABLE IF EXISTS `restaurants`;
 DROP TABLE IF EXISTS restaurants;
 CREATE TABLE restaurants (
     id INT NOT NULL AUTO_INCREMENT,
+    owner_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     address TEXT NOT NULL,
     latitude DECIMAL(10,8),
@@ -201,7 +202,8 @@ CREATE TABLE restaurants (
     phone VARCHAR(20),
     rating DECIMAL(2,1) DEFAULT 0.0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -257,4 +259,98 @@ CREATE TABLE users (
 -- Dumping data for table `users`
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE user_dietary_restrictions;
+TRUNCATE TABLE users;
+TRUNCATE TABLE restaurants;
+
+-- Step 1: Insert Users
+INSERT INTO users (id, name, email, password_hash, phone, role)
+VALUES
+-- Restaurant owners
+(1, 'Alice Chen', 'alice.chen@example.com', '$2b$10$abc1234567890', '415-555-1010', 'restaurant'),
+(2, 'Marco Rossi', 'marco.rossi@example.com', '$2b$10$abc1234567890', '408-555-2020', 'restaurant'),
+-- Customers
+(3, 'Sarah Lee', 'sarah.lee@example.com', '$2b$10$abc1234567890', '510-555-3030', 'customer'),
+(4, 'David Kim', 'david.kim@example.com', '$2b$10$abc1234567890', '650-555-4040', 'customer'),
+(5, 'Emma Lopez', 'emma.lopez@example.com', '$2b$10$abc1234567890', '831-555-5050', 'customer');
+
+-- Step 2: Insert Restaurants (linked to owners)
+TRUNCATE TABLE restaurants;
+INSERT INTO restaurants (id, owner_id, name, address, latitude, longitude, cuisine_type, phone, rating)
+VALUES
+(1, 1, 'Golden Dragon', '123 Market St, San Francisco, CA', 37.774929, -122.419416, 'Chinese', '415-555-1234', 4.5),
+(2, 2, 'La Bella Vita', '456 Mission Blvd, San Jose, CA', 37.338208, -121.886329, 'Italian', '408-555-5678', 4.3),
+(3, 3, 'Green Garden', '321 Blossom Hill Rd, Los Gatos, CA', 37.226611, -121.974678, 'Vegan', '408-555-3456', 4.6),
+(4, 4, 'El Ranchito', '654 Main St, Santa Clara, CA', 37.354108, -121.955238, 'Mexican', '408-555-7890', 4.4),
+(5, 5, 'Sushi Zen', '987 Pacific Ave, Santa Cruz, CA', 36.974117, -122.030792, 'Japanese', '831-555-4321', 4.8);
+
+-- ✅ Link restaurant to owner (users table)
+UPDATE users SET restaurant_id = id WHERE id <= 5;
+
+-- 3️⃣ FOODS
+TRUNCATE TABLE foods;
+INSERT INTO foods (id, restaurant_id, name, description, price, discount_percent, photo_url, available_quantity, pickup_start, pickup_end)
+VALUES
+(1, 1, 'Kung Pao Chicken', 'Spicy stir-fried chicken with peanuts', 12.99, 10, 'https://example.com/kungpao.jpg', 20, '11:00:00', '15:00:00'),
+(2, 2, 'Margherita Pizza', 'Classic Italian pizza with mozzarella and basil', 10.50, 0, 'https://example.com/pizza.jpg', 15, '11:00:00', '16:00:00'),
+(3, 3, 'Vegan Buddha Bowl', 'Healthy mixed bowl with tofu and veggies', 9.75, 5, 'https://example.com/buddha.jpg', 25, '10:00:00', '14:00:00'),
+(4, 4, 'Taco Platter', 'Assorted beef, chicken, and veggie tacos', 11.25, 15, 'https://example.com/tacos.jpg', 30, '12:00:00', '17:00:00'),
+(5, 5, 'Salmon Sushi Roll', 'Fresh salmon roll with wasabi and soy sauce', 8.99, 0, 'https://example.com/sushi.jpg', 40, '11:00:00', '15:00:00');
+
+-- 4️⃣ FOOD_DIETARY_COMPLIANCE
+TRUNCATE TABLE food_dietary_compliance;
+INSERT INTO food_dietary_compliance (food_id, restriction_id)
+VALUES
+(1, 3), -- Kung Pao Chicken: nut-free
+(2, 6), -- Margherita Pizza: vegetarian
+(3, 5), -- Buddha Bowl: vegan
+(4, 9), -- Taco Platter: halal
+(5, 10); -- Sushi Roll: kosher
+
+
+-- 5️⃣ USER_DIETARY_RESTRICTIONS
+TRUNCATE TABLE user_dietary_restrictions;
+INSERT INTO user_dietary_restrictions (user_id, restriction_id)
+VALUES
+(3, 5), -- Sarah: Vegan
+(3, 7), -- Sarah: Sugar-Free
+(4, 9), -- David: Halal
+(5, 6), -- Emma: Vegetarian
+(5, 10); -- Emma: Kosher
+
+-- 6️⃣ PICKUP_SLOTS
+TRUNCATE TABLE pickup_slots;
+INSERT INTO pickup_slots (id, restaurant_id, slot_start, slot_end, max_orders)
+VALUES
+(1, 1, '2025-10-29 11:00:00', '2025-10-29 12:00:00', 10),
+(2, 2, '2025-10-29 12:00:00', '2025-10-29 13:00:00', 8),
+(3, 3, '2025-10-29 13:00:00', '2025-10-29 14:00:00', 10),
+(4, 4, '2025-10-29 14:00:00', '2025-10-29 15:00:00', 12),
+(5, 5, '2025-10-29 15:00:00', '2025-10-29 16:00:00', 10);
+
+-- 7️⃣ ORDERS
+TRUNCATE TABLE orders;
+INSERT INTO orders (id, user_id, restaurant_id, pickup_slot_id, total_amount, status)
+VALUES
+(1, 3, 1, 1, 25.98, 'confirmed'),
+(2, 4, 2, 2, 10.50, 'pending'),
+(3, 5, 3, 3, 9.75, 'ready'),
+(4, 3, 4, 4, 22.50, 'completed'),
+(5, 4, 5, 5, 17.98, 'cancelled');
+
+-- 8️⃣ ORDER_ITEMS
+TRUNCATE TABLE order_items;
+INSERT INTO order_items (id, order_id, food_id, quantity, price)
+VALUES
+(1, 1, 1, 2, 12.99),
+(2, 2, 2, 1, 10.50),
+(3, 3, 3, 1, 9.75),
+(4, 4, 4, 2, 11.25),
+(5, 5, 5, 2, 8.99);
+
+
+
+SET FOREIGN_KEY_CHECKS = 1;
 
