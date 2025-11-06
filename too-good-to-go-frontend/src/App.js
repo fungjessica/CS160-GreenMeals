@@ -368,6 +368,7 @@ const SearchTab = () => (
   />
 );
 
+
   const RestaurantDetailTab = ({ restaurantId, onBack }) => {
     const [restaurant, setRestaurant] = useState(null);
     const [menu, setMenu] = useState([]);
