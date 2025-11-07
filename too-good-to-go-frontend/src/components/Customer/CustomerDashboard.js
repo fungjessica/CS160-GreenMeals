@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Filter, Clock, ShoppingBag, User, CheckCircle, XCircle, Plus, Edit, Trash2, LogOut, Map as MapIcon } from 'lucide-react';
+import L from "leaflet";
 import ProfileTab from './ProfileTab';
 import SearchResTab from './SearchResTab';
 import OrdersTab from './OrdersTab';
-import MapView from './MapView';
 import RestaurantDetailTab from './RestaurantDetailTab';
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -27,7 +27,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     const [markers, setMarkers] = useState([]);
 
 
-      const handleRestaurantClick = (restaurant) => {
+    const handleRestaurantClick = (restaurant) => {
         setSelectedRestaurant(restaurant);
         setActiveTab('restaurant-detail');
     };
@@ -239,13 +239,6 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
     }
   };
 
-//   const SearchTab = () => (
-//     <MapView 
-//       token={token} 
-//       onRestaurantClick={handleRestaurantClick}
-//       userRestrictions={user.dietaryRestrictions || []}
-//     />
-//   );
 
       return (
         <div className="min-h-screen bg-gray-100">
@@ -259,9 +252,9 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
                 <button onClick={() => setActiveTab('search')} className={`px-4 py-2 rounded-lg ${activeTab === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
                   Search
                 </button>
-                <button onClick={() => setActiveTab('map')} className={`px-4 py-2 rounded-lg ${activeTab === 'map' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+                {/* <button onClick={() => setActiveTab('map')} className={`px-4 py-2 rounded-lg ${activeTab === 'map' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
                   Map
-                </button>
+                </button> */}
                 <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg ${activeTab === 'orders' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
                   Orders
                 </button>
@@ -282,6 +275,7 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
                 <SearchResTab  
                 token={token}
                 handleRestaurantClick={handleRestaurantClick}
+                userRestrictions={user.dietaryRestrictions || []}
                 />)}
             {/* {activeTab === 'map' && <SearchTab />} */}
             {activeTab === 'orders' && <OrdersTab cart={cart} setCart={setCart} token={token} />}
