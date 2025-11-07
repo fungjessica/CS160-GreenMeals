@@ -13,33 +13,36 @@ const JWT_SECRET = config.jwtSecret;
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
-
+    
     if (!['customer', 'restaurant'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
-    }
-
+    } 
+    // check email exists or not
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
     const passwordHash = await bcrypt.hash(password.trim(), 10);
+    //create user
+    const [userResult] = await pool.query(
+      'INSERT INTO users (name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
+      [name, email, passwordHash, phone, role]
+    );
+    const userId = userResult.insertId;
 
     let restaurantId = null;
+    //if restaurant -> use userId as owner_id for that retaurant
     if (role === 'restaurant') {
       const [restaurantResult] = await pool.query(
-        'INSERT INTO restaurants (name, address, phone) VALUES (?, ?, ?)',
-        [`${name}'s Restaurant`, 'Unknown address', phone]
+        'INSERT INTO restaurants (name, address, phone,owner_id) VALUES (?, ?, ?,?)',
+        [`${name}'s Restaurant`, 'Unknown address', phone, userId]
       );
       restaurantId = restaurantResult.insertId;
+      // Update user record with restaurantId
+      await pool.query('UPDATE users SET restaurant_id = ? WHERE id = ?', [restaurantId, userId]);
     }
 
-    const [result] = await pool.query(
-      'INSERT INTO users (name, email, password_hash, phone, role, restaurant_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, passwordHash, phone, role, restaurantId]
-    );
-
-    const userId = result.insertId;
     const token = jwt.sign({ id: userId, email, role, restaurantId }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
