@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EditInfoTab from './EditInfoTab';
 import InventoryTab from './InventoryTab';
 import OrdersTab from './OrdersTab';
+import ReportTab from './ReportTab';
 import { Calendar, MapPin, Filter, Clock, ShoppingBag, User, CheckCircle, XCircle, Plus, Edit, Trash2, LogOut, Map as MapIcon } from 'lucide-react';
 
 
@@ -128,6 +129,12 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
             >
               Orders
             </button>
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`px-4 py-2 rounded-lg ${activeTab === 'report' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            >
+              Report
+            </button>
             <button onClick={handleLogout} className="px-4 py-2 rounded-lg bg-red-600 text-white">
               <LogOut className="w-5 h-5" />
             </button>
@@ -154,12 +161,15 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
                 allRestrictions={allRestrictions}
               />
             )}
-    
+
             {activeTab === 'orders' && (
               <OrdersTab
                 orders={orders}
                 updateOrderStatus={updateOrderStatus}
               />
+            )}
+            {activeTab === 'report' && (
+              <ReportTab token={token} />
             )}
           </main>
         </div>
