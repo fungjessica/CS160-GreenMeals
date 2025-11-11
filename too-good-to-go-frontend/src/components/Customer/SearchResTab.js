@@ -43,8 +43,13 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
       const restaurantsArray = Array.isArray(data)
       ? data
       : data.restaurants || data.businesses || [];
+    
+      const taggedResults = restaurantsArray.map(r => ({
+      ...r,
+      source: 'database'
+    }));
 
-    setResults(restaurantsArray);
+    setResults(taggedResults);
     } catch (err) {
       console.error('Error searching restaurants:', err);
     } finally {
@@ -64,6 +69,15 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
       shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
       iconSize: [25, 41],
       iconAnchor: [12, 41],
+    });
+
+    const dbIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
     });
 
     const searchRestaurants = async (searchQuery) => {
@@ -187,7 +201,7 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
                   <Marker
                     key={r.id}
                     position={[r.latitude, r.longitude]}
-                    icon={defaultIcon}
+                    icon={r.source === 'database' ? dbIcon : defaultIcon}
                   >
                     <Popup>
                       <strong>{r.name}</strong><br />
