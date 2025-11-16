@@ -4,10 +4,21 @@ const API_BASE_URL = 'http://localhost:3001/api';
 const OrdersTab = ({ cart, setCart, token }) => {
   const [orders, setOrders] = useState([]);
   const [selectedTimes, setSelectedTimes] = useState({}); // track pickup times per restaurant
+  const [orderTimes, setOrderTimes] = useState({}); // track pickup times per order
+  const [localSpecificPickup, setLocalSpecificPickup] = useState({}); // track specific pickup locally
+  const [savedPickupWindows, setSavedPickupWindows] = useState({});
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
+useEffect(() => {
+  const savedTimes = JSON.parse(localStorage.getItem('orderTimes') || '{}');
+  const savedSpecific = JSON.parse(localStorage.getItem('localSpecificPickup') || '{}');
+  const savedWindows = JSON.parse(localStorage.getItem('savedPickupWindows') || '{}');
+  setSavedPickupWindows(savedWindows);
+
+  setOrderTimes(savedTimes);
+  setLocalSpecificPickup(savedSpecific);
+
+  loadOrders();
+}, []);
 
   const loadOrders = async () => {
     try {
@@ -15,8 +26,19 @@ const OrdersTab = ({ cart, setCart, token }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      console.log('📦 Orders from backend:', data);
+      console.log('Orders from backend:', data);
       setOrders(data);
+
+      setOrderTimes((prev) => {
+        const merged = {};
+        data.forEach((order) => {
+          merged[order.id] = prev[order.id] || '';
+        });
+
+        localStorage.setItem('orderTimes', JSON.stringify(merged));
+
+        return merged;
+      });
     } catch (err) {
       console.error('Error loading orders:', err);
     }
@@ -25,17 +47,36 @@ const OrdersTab = ({ cart, setCart, token }) => {
   // helper: generate available pickup time options
   const generateTimeOptions = (start, end, interval = 30) => {
     if (!start || !end) return [];
+
+    let startDate;
+    let endDate;
+
+    if (typeof start === 'string' && (start.includes('T') || start.includes(' '))) {
+      startDate = new Date(start);
+      endDate = new Date(end);
+    } else {
+      const [sH, sM] = start.split(':').map(Number);
+      const [eH, eM] = end.split(':').map(Number);
+      startDate = new Date();
+      startDate.setHours(sH || 0, sM || 0, 0, 0);
+      endDate = new Date();
+      endDate.setHours(eH || 0, eM || 0, 0, 0);
+    }
+
     const options = [];
-    const startDate = new Date(`1970-01-01T${start}`);
-    const endDate = new Date(`1970-01-01T${end}`);
     const current = new Date(startDate);
 
     while (current <= endDate) {
       options.push(
-        current.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        current.toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
       );
       current.setMinutes(current.getMinutes() + interval);
     }
+
     return options;
   };
 
@@ -65,6 +106,10 @@ const OrdersTab = ({ cart, setCart, token }) => {
     setSelectedTimes((prev) => ({ ...prev, [restaurantId]: time }));
   };
 
+  const handleOrderTimeChange = (orderId, time) => {
+    setOrderTimes((prev) => ({ ...prev, [orderId]: time }));
+  };
+
   const handlePlaceOrder = async () => {
     try {
       if (cart.length === 0) return alert('Your cart is empty!');
@@ -75,6 +120,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
           restaurantId: parseInt(restaurantId),
           pickupSlotId: 1, // simplification
           pickupTime: selectedTimes[restaurantId] || null,
+          specificPickup: group.items.some(i => i.specificPickup),
           totalAmount: group.subtotal,
           foodItems: group.items.map((i) => ({
             foodId: i.id,
@@ -98,7 +144,44 @@ const OrdersTab = ({ cart, setCart, token }) => {
           return;
         }
 
-        console.log('Order placed for restaurant:', restaurantId);
+        const result = await response.json();
+        console.log('Order placed for restaurant:', restaurantId, '→', result);
+
+        if (result && result.orderId) {
+          const newOrderId = result.orderId;
+
+          setOrderTimes((prev) => {
+            const updated = {
+              ...prev,
+              [newOrderId]: selectedTimes[restaurantId] || '',
+            };
+            localStorage.setItem('orderTimes', JSON.stringify(updated));
+            return updated;
+          });
+
+          if (group.items.some((i) => i.specificPickup)) {
+            setLocalSpecificPickup((prev) => {
+              const updated = {
+                ...prev,
+                [newOrderId]: true,
+              };
+              localStorage.setItem('localSpecificPickup', JSON.stringify(updated));
+              return updated;
+            });
+          }
+
+          setSavedPickupWindows(prev => {
+            const updated = {
+              ...prev,
+              [newOrderId]: {
+                start: group.pickup_start,
+                end: group.pickup_end
+              }
+            };
+            localStorage.setItem('savedPickupWindows', JSON.stringify(updated));
+            return updated;
+          });
+        }
       }
 
       setCart([]);
@@ -173,29 +256,30 @@ const OrdersTab = ({ cart, setCart, token }) => {
                 <span>${group.subtotal.toFixed(2)}</span>
               </div>
 
-              {/* Pickup time dropdown */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Change Pickup Time:
-                </label>
-                <select
-                  className="border rounded-md px-3 py-2 w-48"
-                  value={selectedTimes[restaurantId] || ''}
-                  onChange={(e) =>
-                    handleTimeChange(restaurantId, e.target.value)
-                  }
-                >
-                  <option value="">Select time</option>
-                  {generateTimeOptions(
-                    group.pickup_start,
-                    group.pickup_end
-                  ).map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {group.items.some((i) => i.specificPickup) && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Change Pickup Time:
+                  </label>
+                  <select
+                    className="border rounded-md px-3 py-2 w-48"
+                    value={selectedTimes[restaurantId] || ''}
+                    onChange={(e) =>
+                      handleTimeChange(restaurantId, e.target.value)
+                    }
+                  >
+                    <option value="">Select time</option>
+                    {generateTimeOptions(
+                      group.pickup_start,
+                      group.pickup_end
+                    ).map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           ))}
 
@@ -219,7 +303,23 @@ const OrdersTab = ({ cart, setCart, token }) => {
                 <div className="flex justify-between mb-2">
                   <p className="font-semibold">Order #{order.id}</p>
                   <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">🏠<strong> {order.restaurant_name}</strong></p>
+                  <p className="text-sm text-gray-500"><strong> {order.restaurant_name}</strong></p>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-sm text-gray-700">
+                    Pickup time:{' '}
+                    <span className="font-semibold">
+                      {orderTimes[order.id] || 'Not set'}
+                    </span>
+                  </p>
+                  {localSpecificPickup[order.id] &&
+                   order.status === 'pending' &&
+                   order.slot_start && order.slot_end && (
+                    <div className="mt-1">
+                     
+                    </div>
+                  )}
                 </div>
       
                 <div className="divide-y divide-gray-200">

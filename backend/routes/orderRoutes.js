@@ -41,9 +41,11 @@ router.post('/', authenticateToken, async (req, res) => {
       throw new Error('Pickup slot not found');
     }
     
+    /*
     if (slot[0].current_orders >= slot[0].max_orders) {
       throw new Error('Pickup slot is full');
     }
+    */
     
     // Create order
     const [orderResult] = await connection.query(
