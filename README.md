@@ -36,7 +36,7 @@ My version: `v23.11.0`
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/fungjessica/CS160-GreenMeals
 cd CS160-GreenMeals
 git checkout Master
 ```
@@ -155,7 +155,7 @@ module.exports = {
 
 ---
 
-## ▶️ Running the Application
+## Running the Application
 
 You must run **both backend** and **frontend** servers.
 
@@ -243,8 +243,3 @@ npm install       # frontend
 npm start         # frontend
 ```
 
-```
-
----
-
-```
