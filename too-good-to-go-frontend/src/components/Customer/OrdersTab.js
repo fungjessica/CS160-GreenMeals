@@ -93,18 +93,18 @@ const OrdersTab = ({ cart, setCart, token }) => {
         });
 
         if (!response.ok) {
-          console.error('❌ Failed to checkout:', await response.text());
+          console.error('Failed to checkout:', await response.text());
           alert('Checkout failed for one of your restaurants.');
           return;
         }
 
-        console.log('✅ Order placed for restaurant:', restaurantId);
+        console.log('Order placed for restaurant:', restaurantId);
       }
 
       setCart([]);
       loadOrders();
   
-      alert("🎉 Order successfully placed!.");
+      alert("Order successfully placed!.");
   
     } catch (error) {
       console.error('Error during checkout:', error);
@@ -137,7 +137,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
     <div className="max-w-5xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-4">My Orders</h2>
 
-      {/* 🛒 Current Cart */}
+      {/* Current Cart */}
       {cart && cart.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold mb-4 text-lg">🛒 Current Cart</h3>
@@ -173,7 +173,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
                 <span>${group.subtotal.toFixed(2)}</span>
               </div>
 
-              {/* ⏰ Pickup time dropdown */}
+              {/* Pickup time dropdown */}
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Change Pickup Time:
@@ -210,7 +210,7 @@ const OrdersTab = ({ cart, setCart, token }) => {
   </div>
 )}
       
-          {/* 🧾 Past Orders from Backend */}
+          {/* Past Orders from Backend */}
           {orders.length === 0 ? (
             <p className="text-gray-500">You have no history orders.</p>
           ) : (

@@ -1,4 +1,4 @@
-## 📦 Prerequisites
+## Prerequisites
 
 Before setting up the project, make sure you have the following installed:
 
@@ -31,14 +31,14 @@ My version: `v23.11.0`
 
 ---
 
-## 🚀 Project Setup
+## Project Setup
 
 ### Step 1: Clone the Repository
 
 ```bash
 git clone <your-repository-url>
-cd TooGoodToGo
-git checkout muyi
+cd CS160-GreenMeals
+git checkout Master
 ```
 
 ---
@@ -52,6 +52,11 @@ Make sure to go to CS160-GreenMeals/backend/database/cs160.sql
 
 ```bash
 brew services start mysql@8.0
+```
+
+If MySQL is version 8.0 or above, just run
+```bash
+brew services start mysql
 ```
 
 #### 2.2 Log in to MySQL
@@ -71,7 +76,7 @@ USE too_good_to_go;
 SOURCE cs160.sql;
 ```
 
-> 💡 This imports all tables and sample data from the provided `cs160.sql` file.
+> This imports all tables and sample data from the provided `cs160.sql` file.
 
 Alternatively, run it as a single command in the terminal:
 
@@ -154,21 +159,21 @@ module.exports = {
 
 You must run **both backend** and **frontend** servers.
 
-### 🖥️ Terminal 1 – Backend
+### Terminal 1 – Backend
 
 ```bash
-cd TooGoodToGo
+cd CS160-GreenMeals
 npm start   # or node server.js
 ```
 
 You should see:
 
 ```
-✅ Server running on port 3001
-📡 API available at http://localhost:3001/api
+Server running on port 3001
+API available at http://localhost:3001/api
 ```
 
-### 💻 Terminal 2 – Frontend
+### Terminal 2 – Frontend
 
 ```bash
 cd too-good-to-go-frontend
@@ -176,7 +181,7 @@ npm start
 ```
 
 The browser should open automatically at:
-👉 [http://localhost:3000](http://localhost:3000)
+[http://localhost:3000](http://localhost:3000)
 
 If you see **“Something is already running on port 3000”**, fix it with:
 
@@ -193,26 +198,26 @@ PORT=3001 npm start
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Problem:** “Access denied for user 'root'@'localhost'”
-✅ Check password in `server.js` and restart MySQL.
+Check password in `server.js` and restart MySQL.
 
 **Problem:** “Frontend stuck on Loading…”
-✅ Ensure backend is running on port 3001 and API base URL matches.
+Ensure backend is running on port 3001 and API base URL matches.
 
 **Problem:** “Port already in use”
-✅ Run `lsof -i :3000` and `kill -9 <PID>`.
+Run `lsof -i :3000` and `kill -9 <PID>`.
 
 **Problem:** “Database already exists”
-✅ Inside MySQL:
+Inside MySQL:
 
 ```sql
 DROP DATABASE too_good_to_go;
 ```
 
 **Problem:** Tailwind or PostCSS errors
-✅ Ensure these packages are installed in devDependencies:
+Ensure these packages are installed in devDependencies:
 
 ```bash
 npm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
@@ -220,27 +225,8 @@ npm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
 
 ---
 
-## 🧰 Project Structure
 
-```
-TooGoodToGo/
-├── server.js
-├── cs160.sql
-├── package.json
-│
-└── too-good-to-go-frontend/
-    ├── src/
-    │   ├── App.js
-    │   ├── index.js
-    │   └── index.css
-    ├── public/
-    ├── package.json
-    └── tailwind.config.js
-```
-
----
-
-## ✅ Quick Start
+## Quick Start
 
 ```bash
 brew services start mysql@8.0

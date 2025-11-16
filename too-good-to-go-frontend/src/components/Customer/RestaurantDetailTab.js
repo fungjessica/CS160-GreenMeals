@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:3001/api';
 const RestaurantDetailTab = ({ restaurant, token, addToCart, onBack }) => {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log("🍽 Restaurant prop:", restaurant);
+  console.log("Restaurant prop:", restaurant);
   useEffect(() => {
     if (restaurant?.id) {
       loadRestaurantDetails(restaurant.id);

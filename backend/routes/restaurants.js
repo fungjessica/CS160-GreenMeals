@@ -279,8 +279,8 @@ router.get('/report', authenticateToken, async (req, res) => {
   
   try {
     const restaurantId = req.user.restaurantId; 
-    console.log("🧩 Report route hit for restaurant:", restaurantId);
-    console.log("🔐 Current user payload:", req.user); 
+    console.log("Report route hit for restaurant:", restaurantId);
+    console.log("Current user payload:", req.user); 
     const [rows] = await pool.query(`
       SELECT 
         f.name AS food_name,
@@ -297,7 +297,7 @@ router.get('/report', authenticateToken, async (req, res) => {
       ORDER BY revenue DESC;
     `, [restaurantId]);
 
-    console.log("📊 Report result:", rows);
+    console.log("Report result:", rows);
     res.json(rows);
   } catch (error) {
     console.error("Error generating report:", error);
