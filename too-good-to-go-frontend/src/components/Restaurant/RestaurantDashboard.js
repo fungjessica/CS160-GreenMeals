@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EditInfoTab from './EditInfoTab';
 import InventoryTab from './InventoryTab';
 import OrdersTab from './OrdersTab';
+import ReportTab from './ReportTab';
 import { Calendar, MapPin, Filter, Clock, ShoppingBag, User, CheckCircle, XCircle, Plus, Edit, Trash2, LogOut, Map as MapIcon } from 'lucide-react';
 
 
@@ -25,7 +26,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadRestaurant = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/my-restaurant`, {
+        const response = await fetch(`${API_BASE_URL}/owner/restaurant/my-restaurant`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -37,11 +38,11 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadInventory = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/inventory`, {
+        const response = await fetch(`${API_BASE_URL}/owner/restaurant/inventory`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setInventory(data.inventory || []);
+        setInventory(Array.isArray(data) ? data : data.inventory || []);
       } catch (error) {
         console.error('Error loading inventory:', error);
       }
@@ -49,11 +50,11 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const loadOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/orders`, {
+        const response = await fetch(`${API_BASE_URL}/owner/restaurant/orders`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setOrders(data.orders || []);
+        setOrders(Array.isArray(data) ? data : data.orders || []);
       } catch (error) {
         console.error('Error loading orders:', error);
       }
@@ -73,7 +74,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
   
     const updateOrderStatus = async (orderId, status) => {
       try {
-        await fetch(`${API_BASE_URL}/restaurants/orders/${orderId}/status`, {
+        await fetch(`${API_BASE_URL}/owner/restaurant/orders/${orderId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -91,7 +92,7 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
       if (!window.confirm('Delete this item?')) return;
       
       try {
-        await fetch(`${API_BASE_URL}/restaurant/foods/${foodId}`, {
+        await fetch(`${API_BASE_URL}/owner/restaurant/foods/${foodId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -128,6 +129,12 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
             >
               Orders
             </button>
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`px-4 py-2 rounded-lg ${activeTab === 'report' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            >
+              Report
+            </button>
             <button onClick={handleLogout} className="px-4 py-2 rounded-lg bg-red-600 text-white">
               <LogOut className="w-5 h-5" />
             </button>
@@ -154,12 +161,15 @@ const RestaurantDashboard = ({ user, token, handleLogout }) => {
                 allRestrictions={allRestrictions}
               />
             )}
-    
+
             {activeTab === 'orders' && (
               <OrdersTab
                 orders={orders}
                 updateOrderStatus={updateOrderStatus}
               />
+            )}
+            {activeTab === 'report' && (
+              <ReportTab token={token} />
             )}
           </main>
         </div>

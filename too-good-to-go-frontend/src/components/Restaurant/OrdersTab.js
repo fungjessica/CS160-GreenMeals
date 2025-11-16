@@ -44,7 +44,7 @@ const OrdersTab = ({orders, updateOrderStatus}) => (
                 <p className="font-semibold mb-2">Items:</p>
                 {order.items.map((item, idx) => (
                   <p key={idx} className="text-sm">
-                    • {item.food_name} x{item.quantity} - ${item.price.toFixed(2)}
+                    • {item.food_name} x{item.quantity} - ${Number(item.price).toFixed(2)}
                   </p>
                 ))}
                 <p className="font-bold text-lg mt-3">Total: ${order.total_amount}</p>
