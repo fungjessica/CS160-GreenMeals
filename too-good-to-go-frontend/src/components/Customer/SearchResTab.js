@@ -41,22 +41,98 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
       });
       const data = await res.json();
       const restaurantsArray = Array.isArray(data)
-      ? data
-      : data.restaurants || data.businesses || [];
-    
+        ? data
+        : data.restaurants || data.businesses || [];
+      
       const taggedResults = restaurantsArray.map(r => ({
-      ...r,
-      source: 'database'
-    }));
+        ...r,
+        source: 'database'
+      }));
 
-    setResults(taggedResults);
+      // Filter by dietary restrictions if enabled
+      let filteredResults = taggedResults;
+      
+      if (filterByRestrictions && userRestrictions.length > 0) {
+        console.log('Filtering by restrictions:', userRestrictions.map(r => r.restriction_name));
+        
+        // Fetch menu items for each restaurant and check compatibility
+        const restaurantChecks = await Promise.all(
+          taggedResults.map(async (restaurant) => {
+            try {
+              // Fetch menu items with dietary info for this restaurant
+              const menuRes = await fetch(
+                `${API_BASE_URL}/customer/restaurant/${restaurant.id}/menu`,
+                {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                }
+              );
+              
+              if (!menuRes.ok) {
+                console.warn(`Failed to fetch menu for ${restaurant.name}`);
+                return { restaurant, hasCompatibleItems: false };
+              }
+              
+              const menuData = await menuRes.json();
+              const menuItems = Array.isArray(menuData) ? menuData : menuData.items || [];
+
+              // ADD THIS:
+              console.log('Menu items for', restaurant.name, ':', menuItems);
+              console.log('First item structure:', menuItems[0]);
+              // Check if ANY menu item is compatible with ALL user restrictions
+              // Check if ANY menu item is compatible with ALL user restrictions
+              const hasCompatibleItems = menuItems.some(item => {
+                // Handle dietaryCompliance array format
+                let itemRestrictions = [];
+                
+                if (item.dietaryCompliance && Array.isArray(item.dietaryCompliance)) {
+                  itemRestrictions = item.dietaryCompliance.map(dc => dc.restriction_name);
+                } else if (item.dietary_tags) {
+                  // Fallback for dietary_tags string format
+                  itemRestrictions = item.dietary_tags.split(',').map(tag => tag.trim());
+                }
+                
+                console.log(`Checking ${item.name}:`, itemRestrictions);
+                
+                // Check if this item satisfies ALL user restrictions
+                // Check if this item satisfies ALL user restrictions
+                const userRestrictionNames = userRestrictions.map(r => r.restriction_name);
+                const isCompatible = userRestrictionNames.every(restrictionName => 
+                  itemRestrictions.includes(restrictionName)
+                );
+                
+                if (isCompatible) {
+                  console.log(`✓ ${restaurant.name} - ${item.name} matches all restrictions`);
+                }
+                
+                return isCompatible;
+              });
+              
+              return { restaurant, hasCompatibleItems };
+              
+            } catch (error) {
+              console.error(`Error checking ${restaurant.name}:`, error);
+              return { restaurant, hasCompatibleItems: false };
+            }
+          })
+        );
+        
+        // Filter to only restaurants with compatible items
+        filteredResults = restaurantChecks
+          .filter(check => check.hasCompatibleItems)
+          .map(check => check.restaurant);
+        
+        console.log(`Found ${filteredResults.length}/${taggedResults.length} restaurants with compatible items`);
+      }
+      
+      setResults(filteredResults);
     } catch (err) {
       console.error('Error searching restaurants:', err);
     } finally {
       setLoading(false);
     }
   };
-    // Leaflet icons
+  
+  // Leaflet icons
     const defaultIcon = new L.Icon({
       iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -80,30 +156,6 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
         shadowSize: [41, 41],
     });
 
-    const searchRestaurants = async (searchQuery) => {
-      if (!searchQuery) return;
-      
-      try {
-          // Build URL with dietary restrictions if enabled
-          let url = `${API_BASE_URL}/yelp/restaurants?q=${searchQuery}&lat=${center[0]}&lon=${center[1]}`;
-          
-          // Add dietary restriction filtering if enabled and user has restrictions
-          if (filterByRestrictions && userRestrictions.length > 0) {
-              const restrictionIds = userRestrictions.map(r => r.id).join(',');
-              url += `&restrictionIds=${restrictionIds}`;
-              console.log('Searching with restrictions:', restrictionIds);
-          }
-          
-          const response = await fetch(url, { 
-              headers: { 'Authorization': `Bearer ${token}` } 
-          });
-          const data = await response.json();
-          console.log('Search results:', data);
-          setRestaurants(data.businesses || []);
-      } catch (error) {
-          console.error('Error searching restaurants:', error);
-      }
-  };
     return (
       <div className="max-w-5xl mx-auto p-6">
         {/* Header */}
