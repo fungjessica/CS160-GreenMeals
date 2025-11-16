@@ -274,6 +274,38 @@ router.patch('/orders/:orderId/status', authenticateToken, isRestaurantOwner, as
     res.status(500).json({ error: 'Server error' });
   }
 });
+// GET /owner/restaurant/report
+router.get('/report', authenticateToken, async (req, res) => {
+  
+  try {
+    const restaurantId = req.user.restaurantId; 
+    console.log("🧩 Report route hit for restaurant:", restaurantId);
+    console.log("🔐 Current user payload:", req.user); 
+    const [rows] = await pool.query(`
+      SELECT 
+        f.name AS food_name,
+        SUM(oi.quantity) AS total_sold,
+  SUM(
+    (oi.price * (1 - (f.discount_percent / 100))) * oi.quantity
+  ) AS revenue
+      FROM order_items oi
+      JOIN foods f ON oi.food_id = f.id
+      JOIN orders o ON o.id = oi.order_id
+      WHERE f.restaurant_id = ?
+        AND o.status IN ('completed')
+      GROUP BY f.name
+      ORDER BY revenue DESC;
+    `, [restaurantId]);
+
+    console.log("📊 Report result:", rows);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error generating report:", error);
+    res.status(500).json({ error: "Failed to load report data" });
+  }
+});
+
+
 
 // ============================================
 // CUSTOMER ENDPOINTS

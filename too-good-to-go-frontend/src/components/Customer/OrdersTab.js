@@ -120,15 +120,29 @@ const OrdersTab = ({ cart, setCart, token }) => {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold mb-4 text-lg">🛒 Current Cart</h3>
 
+
     {/* Loop through each restaurant group */}
-    {Object.values(groupedByRestaurant).map((group, idx) => (
-      <div key={idx} className="mb-4">
-        <h4 className="font-bold text-green-700 mb-2">{group.restaurant_name}</h4>
+    {Object.entries(groupedByRestaurant).map(([restaurantId, group], idx) => (
+      <div key={restaurantId} className="mb-4 relative border-b pb-2">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-bold text-green-700">{group.restaurant_name}</h4>
+          <button
+            onClick={() =>
+              setCart(cart.filter(item => item.restaurant_id !== parseInt(restaurantId)))
+            }
+            className="text-red-500 hover:text-red-700 text-xl font-bold"
+            title="Remove this restaurant's items"
+          >
+            ✖
+          </button>
+        </div>
 
         {group.items.map((item, i) => (
           <div key={i} className="flex justify-between text-gray-800 py-1">
             <span>• {item.name} × {item.quantity}</span>
-            <span>${(item.price * item.quantity).toFixed(2)}</span>
+            <span>
+              ${(item.price * (1 - (item.discount_percent || 0) / 100) * item.quantity).toFixed(2)}
+            </span>
           </div>
         ))}
 
