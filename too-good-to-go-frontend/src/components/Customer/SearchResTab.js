@@ -48,8 +48,6 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
         ...r,
         source: 'database'
       }));
-
-      // Filter by dietary restrictions if enabled
       
       setResults(taggedResults);
     } catch (err) {
