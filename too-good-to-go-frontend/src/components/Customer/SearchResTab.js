@@ -50,81 +50,8 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
       }));
 
       // Filter by dietary restrictions if enabled
-      let filteredResults = taggedResults;
       
-      if (filterByRestrictions && userRestrictions.length > 0) {
-        console.log('Filtering by restrictions:', userRestrictions.map(r => r.restriction_name));
-        
-        // Fetch menu items for each restaurant and check compatibility
-        const restaurantChecks = await Promise.all(
-          taggedResults.map(async (restaurant) => {
-            try {
-              // Fetch menu items with dietary info for this restaurant
-              const menuRes = await fetch(
-                `${API_BASE_URL}/customer/restaurant/${restaurant.id}/menu`,
-                {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                }
-              );
-              
-              if (!menuRes.ok) {
-                console.warn(`Failed to fetch menu for ${restaurant.name}`);
-                return { restaurant, hasCompatibleItems: false };
-              }
-              
-              const menuData = await menuRes.json();
-              const menuItems = Array.isArray(menuData) ? menuData : menuData.items || [];
-
-              // ADD THIS:
-              console.log('Menu items for', restaurant.name, ':', menuItems);
-              console.log('First item structure:', menuItems[0]);
-              // Check if ANY menu item is compatible with ALL user restrictions
-              // Check if ANY menu item is compatible with ALL user restrictions
-              const hasCompatibleItems = menuItems.some(item => {
-                // Handle dietaryCompliance array format
-                let itemRestrictions = [];
-                
-                if (item.dietaryCompliance && Array.isArray(item.dietaryCompliance)) {
-                  itemRestrictions = item.dietaryCompliance.map(dc => dc.restriction_name);
-                } else if (item.dietary_tags) {
-                  // Fallback for dietary_tags string format
-                  itemRestrictions = item.dietary_tags.split(',').map(tag => tag.trim());
-                }
-                
-                console.log(`Checking ${item.name}:`, itemRestrictions);
-                
-                // Check if this item satisfies ALL user restrictions
-                // Check if this item satisfies ALL user restrictions
-                const userRestrictionNames = userRestrictions.map(r => r.restriction_name);
-                const isCompatible = userRestrictionNames.every(restrictionName => 
-                  itemRestrictions.includes(restrictionName)
-                );
-                
-                if (isCompatible) {
-                  console.log(`✓ ${restaurant.name} - ${item.name} matches all restrictions`);
-                }
-                
-                return isCompatible;
-              });
-              
-              return { restaurant, hasCompatibleItems };
-              
-            } catch (error) {
-              console.error(`Error checking ${restaurant.name}:`, error);
-              return { restaurant, hasCompatibleItems: false };
-            }
-          })
-        );
-        
-        // Filter to only restaurants with compatible items
-        filteredResults = restaurantChecks
-          .filter(check => check.hasCompatibleItems)
-          .map(check => check.restaurant);
-        
-        console.log(`Found ${filteredResults.length}/${taggedResults.length} restaurants with compatible items`);
-      }
-      
-      setResults(filteredResults);
+      setResults(taggedResults);
     } catch (err) {
       console.error('Error searching restaurants:', err);
     } finally {
@@ -173,46 +100,7 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
             {showMap ? 'Show List' : 'Show Map'}
           </button>
         </div>
-        {/* Checkbox */}
-        <div
-            className="header-right"
-            style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            marginRight: '20px',
-            marginTop: '5px',
-            marginBottom: '10px',
-            }}
-        >
-            {userRestrictions.length > 0 && (
-            <label
-                style={{
-                color: 'black',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                }}
-            >
-                <input
-                type="checkbox"
-                checked={filterByRestrictions}
-                onChange={(e) => setFilterByRestrictions(e.target.checked)}
-                style={{
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer',
-                }}
-                />
-                <span>
-                Filter by my dietary restrictions ({userRestrictions.length})
-                </span>
-            </label>
-            )}
-        </div>
+      
         {/* Search Field */}
         <form onSubmit={handleSearch} className="flex gap-3 mb-6">
           <input
