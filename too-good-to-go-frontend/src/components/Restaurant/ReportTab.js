@@ -16,7 +16,7 @@ const ReportTab = ({ token }) => {
       });
   
       const data = await response.json();
-      console.log("Raw report data from backend:", data);
+      
   
       // Normalize into an array
       const normalized =

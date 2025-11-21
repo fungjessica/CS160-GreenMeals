@@ -26,7 +26,6 @@ useEffect(() => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      console.log('Orders from backend:', data);
       setOrders(data);
 
       setOrderTimes((prev) => {
@@ -145,7 +144,6 @@ useEffect(() => {
         }
 
         const result = await response.json();
-        console.log('Order placed for restaurant:', restaurantId, '→', result);
 
         if (result && result.orderId) {
           const newOrderId = result.orderId;

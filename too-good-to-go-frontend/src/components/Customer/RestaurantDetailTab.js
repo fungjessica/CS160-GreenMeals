@@ -9,9 +9,6 @@ const RestaurantDetailTab = ({ restaurant, token, addToCart, onBack, userRestric
   const [restaurantSpecificPickup, setRestaurantSpecificPickup] = useState(false);
   const [filterByRestrictions, setFilterByRestrictions] = useState(false);
 
-  console.log("Restaurant prop:", restaurant);
-  console.log("User restrictions:", userRestrictions);
-
   useEffect(() => {
     if (restaurant?.id) {
       loadRestaurantDetails(restaurant.id);

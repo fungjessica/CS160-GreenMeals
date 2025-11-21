@@ -46,10 +46,6 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
         shadowSize: [41, 41],
     });
     
-    useEffect(() => {
-        loadAllRestrictions();
-        loadOrders();
-    }, []);
 
     useEffect(() => {
     if (navigator.geolocation) {
