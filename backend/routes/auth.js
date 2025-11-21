@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
     //if restaurant -> use userId as owner_id for that retaurant
     if (role === 'restaurant') {
       const [restaurantResult] = await pool.query(
-        'INSERT INTO restaurants (name, address, phone,owner_id) VALUES (?, ?, ?,?)',
+        'INSERT INTO restaurants (name, address, phone, owner_id) VALUES (?, ?, ?, ?)',
         [`${name}'s Restaurant`, 'Unknown address', phone, userId]
       );
       restaurantId = restaurantResult.insertId;

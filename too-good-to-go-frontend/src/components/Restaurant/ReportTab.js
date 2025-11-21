@@ -16,7 +16,7 @@ const ReportTab = ({ token }) => {
       });
   
       const data = await response.json();
-      console.log("📊 Raw report data from backend:", data);
+      console.log("Raw report data from backend:", data);
   
       // Normalize into an array
       const normalized =
@@ -44,7 +44,7 @@ const ReportTab = ({ token }) => {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">📊 Sales Report</h2>
+      <h2 className="text-2xl font-bold mb-4">Sales Report</h2>
 
       {reportData.length === 0 ? (
         <p className="text-gray-500">No sales data available yet.</p>

@@ -128,11 +128,11 @@ app.use((err, req, res, next) => {
 const PORT = config.port;
 
 app.listen(PORT, () => {
-  console.log('\n🚀 ====================================');
+  console.log('\n  ====================================');
   console.log('   Too Good To Go Backend Server');
-  console.log('   ====================================');
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
+  console.log('    ====================================');
+  console.log(`Server running on port ${PORT}`);
+  console.log(`  API available at http://localhost:${PORT}/api`);
   console.log('====================================\n');
 });
 

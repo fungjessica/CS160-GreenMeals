@@ -286,10 +286,10 @@ VALUES
 (4, 4, 'El Ranchito', '654 Main St, Santa Clara, CA', 37.354108, -121.955238, 'Mexican', '408-555-7890', 4.4),
 (5, 5, 'Sushi Zen', '987 Pacific Ave, Santa Cruz, CA', 36.974117, -122.030792, 'Japanese', '831-555-4321', 4.8);
 
--- ✅ Link restaurant to owner (users table)
+-- Link restaurant to owner (users table)
 UPDATE users SET restaurant_id = id WHERE id <= 5;
 
--- 3️⃣ FOODS
+-- FOODS
 TRUNCATE TABLE foods;
 INSERT INTO foods (id, restaurant_id, name, description, price, discount_percent, photo_url, available_quantity, pickup_start, pickup_end)
 VALUES
@@ -299,7 +299,7 @@ VALUES
 (4, 4, 'Taco Platter', 'Assorted beef, chicken, and veggie tacos', 11.25, 15, 'https://example.com/tacos.jpg', 30, '12:00:00', '17:00:00'),
 (5, 5, 'Salmon Sushi Roll', 'Fresh salmon roll with wasabi and soy sauce', 8.99, 0, 'https://example.com/sushi.jpg', 40, '11:00:00', '15:00:00');
 
--- 4️⃣ FOOD_DIETARY_COMPLIANCE
+-- FOOD_DIETARY_COMPLIANCE
 TRUNCATE TABLE food_dietary_compliance;
 INSERT INTO food_dietary_compliance (food_id, restriction_id)
 VALUES
@@ -310,7 +310,7 @@ VALUES
 (5, 10); -- Sushi Roll: kosher
 
 
--- 5️⃣ USER_DIETARY_RESTRICTIONS
+-- USER_DIETARY_RESTRICTIONS
 TRUNCATE TABLE user_dietary_restrictions;
 INSERT INTO user_dietary_restrictions (user_id, restriction_id)
 VALUES
@@ -320,7 +320,7 @@ VALUES
 (5, 6), -- Emma: Vegetarian
 (5, 10); -- Emma: Kosher
 
--- 6️⃣ PICKUP_SLOTS
+-- PICKUP_SLOTS
 TRUNCATE TABLE pickup_slots;
 INSERT INTO pickup_slots (id, restaurant_id, slot_start, slot_end, max_orders)
 VALUES
@@ -330,7 +330,7 @@ VALUES
 (4, 4, '2025-10-29 14:00:00', '2025-10-29 15:00:00', 12),
 (5, 5, '2025-10-29 15:00:00', '2025-10-29 16:00:00', 10);
 
--- 7️⃣ ORDERS
+-- ORDERS
 TRUNCATE TABLE orders;
 INSERT INTO orders (id, user_id, restaurant_id, pickup_slot_id, total_amount, status)
 VALUES
@@ -340,7 +340,7 @@ VALUES
 (4, 3, 4, 4, 22.50, 'completed'),
 (5, 4, 5, 5, 17.98, 'cancelled');
 
--- 8️⃣ ORDER_ITEMS
+-- ORDER_ITEMS
 TRUNCATE TABLE order_items;
 INSERT INTO order_items (id, order_id, food_id, quantity, price)
 VALUES

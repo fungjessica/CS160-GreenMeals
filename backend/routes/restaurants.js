@@ -279,8 +279,8 @@ router.get('/report', authenticateToken, async (req, res) => {
   
   try {
     const restaurantId = req.user.restaurantId; 
-    console.log("🧩 Report route hit for restaurant:", restaurantId);
-    console.log("🔐 Current user payload:", req.user); 
+    console.log("Report route hit for restaurant:", restaurantId);
+    console.log("Current user payload:", req.user); 
     const [rows] = await pool.query(`
       SELECT 
         f.name AS food_name,
@@ -297,64 +297,12 @@ router.get('/report', authenticateToken, async (req, res) => {
       ORDER BY revenue DESC;
     `, [restaurantId]);
 
-    console.log("📊 Report result:", rows);
+    console.log("Report result:", rows);
     res.json(rows);
   } catch (error) {
     console.error("Error generating report:", error);
     res.status(500).json({ error: "Failed to load report data" });
   }
 });
-
-
-
-// ============================================
-// CUSTOMER ENDPOINTS
-// ============================================
-
-
-// router.get('/search', authenticateToken, async (req, res) => {
-//   try {
-//     const { latitude, longitude, radius = 5, restrictionIds } = req.query;
-    
-//     // Calculate distance using Haversine formula (in kilometers)
-//     let query = `
-//       SELECT DISTINCT r.id, r.name, r.address, r.latitude, r.longitude, 
-//              r.cuisine_type, r.rating, r.phone,
-//              (6371 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
-//              cos(radians(r.longitude) - radians(?)) + 
-//              sin(radians(?)) * sin(radians(r.latitude)))) AS distance
-//       FROM restaurants r
-//       WHERE r.id IN (SELECT DISTINCT restaurant_id FROM foods WHERE available_quantity > 0)
-//     `;
-    
-//     const params = [latitude, longitude, latitude];
-    
-//     // Filter by dietary restrictions if specified
-//     if (restrictionIds && restrictionIds.length > 0) {
-//       const ids = Array.isArray(restrictionIds) ? restrictionIds : [restrictionIds];
-//       query += `
-//         AND r.id IN (
-//           SELECT DISTINCT f.restaurant_id
-//           FROM foods f
-//           JOIN food_dietary_compliance fdc ON f.id = fdc.food_id
-//           WHERE fdc.restriction_id IN (${ids.map(() => '?').join(',')})
-//           GROUP BY f.restaurant_id
-//           HAVING COUNT(DISTINCT fdc.restriction_id) = ?
-//         )
-//       `;
-//       params.push(...ids, ids.length);
-//     }
-    
-//     query += ` HAVING distance < ? ORDER BY distance LIMIT 10`;
-//     params.push(radius);
-    
-//     const [restaurants] = await pool.query(query, params);
-//     res.json(restaurants);
-//   } catch (error) {
-//     console.error('Search restaurants error:', error);
-//     res.status(500).json({ error: 'Server error' });
-//   }
-// });
-
 
 export default router;
