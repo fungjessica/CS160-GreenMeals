@@ -243,3 +243,7 @@ npm install       # frontend
 npm start         # frontend
 ```
 
+## Unit Testing
+to Unit test, install jest:
+npm install --save-dev jest supertest
+
