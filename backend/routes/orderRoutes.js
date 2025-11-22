@@ -5,6 +5,7 @@
 // - Create new orders
 // - View order history
 // - Cancel orders
+// - Pay orders
 
 import express from 'express';
 import pool from '../config/database.js';
@@ -40,9 +41,11 @@ router.post('/', authenticateToken, async (req, res) => {
       throw new Error('Pickup slot not found');
     }
     
+    /*
     if (slot[0].current_orders >= slot[0].max_orders) {
       throw new Error('Pickup slot is full');
     }
+    */
     
     // Create order
     const [orderResult] = await connection.query(
@@ -124,6 +127,7 @@ router.get('/', authenticateToken, async (req, res) => {
         [order.id]
       );
       order.items = items;
+
     }
     
     res.json(orders);
@@ -197,4 +201,39 @@ router.patch('/:orderId/cancel', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * PATCH /api/orders/:orderId/pay
+ * Mark order as paid
+ * Requires: Customer authentication
+ */
+router.patch('/:orderId/pay', authenticateToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Verify the order belongs to the logged-in user
+    const [orders] = await pool.query(
+      'SELECT id, status FROM orders WHERE id = ? AND user_id = ?',
+      [orderId, req.user.id]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (orders[0].status === 'completed') {
+      return res.status(400).json({ error: 'Order already completed' });
+    }
+
+    await pool.query('UPDATE orders SET status = "completed" WHERE id = ?', [orderId]);
+
+    res.json({ message: 'Order marked as completed successfully' });
+  } catch (error) {
+    console.error('Error updating order status to completed:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+router.use((req, res) => {
+  console.log("⚠️ orderRoutes unmatched:", req.method, req.originalUrl);
+  res.status(404).json({ error: 'Order route not found', path: req.originalUrl });
+});
 export default router;

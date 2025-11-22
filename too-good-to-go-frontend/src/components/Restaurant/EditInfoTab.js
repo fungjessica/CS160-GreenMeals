@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 const API_BASE_URL = 'http://localhost:3001/api';
-const EditInfoTab = ({restaurant, token, loadRestaurant}) => {
+const EditInfoTab = ({restaurant, token, reload}) => {
     const [formData, setFormData] = useState({
       name: restaurant?.name || '',
       address: restaurant?.address || '',
@@ -12,7 +12,7 @@ const EditInfoTab = ({restaurant, token, loadRestaurant}) => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
-        const response = await fetch(`${API_BASE_URL}/restaurant/update`, {
+        const response = await fetch(`${API_BASE_URL}/owner/restaurant/update`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ const EditInfoTab = ({restaurant, token, loadRestaurant}) => {
   
         if (!response.ok) throw new Error('Failed to update');
         alert('Restaurant information updated successfully!');
-        loadRestaurant(); // refresh data
+        reload(); // refresh data
       } catch (error) {
         console.error('Update error:', error);
         alert('Error updating restaurant information');
