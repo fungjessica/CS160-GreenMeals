@@ -208,7 +208,7 @@ router.delete('/foods/:foodId', authenticateToken, isRestaurantOwner, async (req
 });
 
 /**
- * GET /api/restaurants/orders
+ * GET /api/restaurant/orders
  * Get all orders for restaurant owner's restaurant
  * Includes customer info and order items
  * Requires: Restaurant owner authentication
@@ -247,7 +247,7 @@ router.get('/orders', authenticateToken, isRestaurantOwner, async (req, res) => 
 });
 
 /**
- * PATCH /api/restaurants/orders/:orderId/status
+ * PATCH /api/restaurant/order/:orderId/status
  * Update order status (pending -> confirmed -> ready -> completed)
  * Requires: Restaurant owner authentication
  */
@@ -274,132 +274,34 @@ router.patch('/orders/:orderId/status', authenticateToken, isRestaurantOwner, as
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-// ============================================
-// CUSTOMER ENDPOINTS
-// ============================================
-
-/**
- * GET /api/restaurants/search
- * Search restaurants near user's location
- * Can filter by dietary restrictions
- * Requires: Customer authentication
- */
-router.get('/search', authenticateToken, async (req, res) => {
+// GET /owner/restaurant/report
+router.get('/report', authenticateToken, async (req, res) => {
+  
   try {
-    const { latitude, longitude, radius = 5, restrictionIds } = req.query;
-    
-    // Calculate distance using Haversine formula (in kilometers)
-    let query = `
-      SELECT DISTINCT r.id, r.name, r.address, r.latitude, r.longitude, 
-             r.cuisine_type, r.rating, r.phone,
-             (6371 * acos(cos(radians(?)) * cos(radians(r.latitude)) * 
-             cos(radians(r.longitude) - radians(?)) + 
-             sin(radians(?)) * sin(radians(r.latitude)))) AS distance
-      FROM restaurants r
-      WHERE r.id IN (SELECT DISTINCT restaurant_id FROM foods WHERE available_quantity > 0)
-    `;
-    
-    const params = [latitude, longitude, latitude];
-    
-    // Filter by dietary restrictions if specified
-    if (restrictionIds && restrictionIds.length > 0) {
-      const ids = Array.isArray(restrictionIds) ? restrictionIds : [restrictionIds];
-      query += `
-        AND r.id IN (
-          SELECT DISTINCT f.restaurant_id
-          FROM foods f
-          JOIN food_dietary_compliance fdc ON f.id = fdc.food_id
-          WHERE fdc.restriction_id IN (${ids.map(() => '?').join(',')})
-          GROUP BY f.restaurant_id
-          HAVING COUNT(DISTINCT fdc.restriction_id) = ?
-        )
-      `;
-      params.push(...ids, ids.length);
-    }
-    
-    query += ` HAVING distance < ? ORDER BY distance LIMIT 10`;
-    params.push(radius);
-    
-    const [restaurants] = await pool.query(query, params);
-    res.json(restaurants);
-  } catch (error) {
-    console.error('Search restaurants error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+    const restaurantId = req.user.restaurantId; 
+    console.log("Report route hit for restaurant:", restaurantId);
+    console.log("Current user payload:", req.user); 
+    const [rows] = await pool.query(`
+      SELECT 
+        f.name AS food_name,
+        SUM(oi.quantity) AS total_sold,
+  SUM(
+    (oi.price * (1 - (f.discount_percent / 100))) * oi.quantity
+  ) AS revenue
+      FROM order_items oi
+      JOIN foods f ON oi.food_id = f.id
+      JOIN orders o ON o.id = oi.order_id
+      WHERE f.restaurant_id = ?
+        AND o.status IN ('completed')
+      GROUP BY f.name
+      ORDER BY revenue DESC;
+    `, [restaurantId]);
 
-/**
- * GET /api/restaurants/:restaurantId/menu
- * Get menu (food items) for a specific restaurant
- * Shows which items match user's dietary restrictions
- * Requires: Customer authentication
- */
-router.get('/:restaurantId/menu', authenticateToken, async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
-    const { restrictionIds } = req.query;
-    
-    // Get all available food items
-    const [foods] = await pool.query(
-      `SELECT f.* FROM foods f
-       WHERE f.restaurant_id = ? AND f.available_quantity > 0
-       ORDER BY f.created_at DESC`,
-      [restaurantId]
-    );
-    
-    // For each food item, get its dietary compliance tags
-    for (let food of foods) {
-      const [compliance] = await pool.query(
-        `SELECT dr.id, dr.restriction_name, dr.restriction_type
-         FROM dietary_restrictions dr
-         JOIN food_dietary_compliance fdc ON dr.id = fdc.restriction_id
-         WHERE fdc.food_id = ?`,
-        [food.id]
-      );
-      food.dietaryCompliance = compliance;
-      
-      // Check if food matches user's restrictions
-      if (restrictionIds) {
-        const ids = Array.isArray(restrictionIds) ? restrictionIds : [restrictionIds];
-        food.matchesRestrictions = ids.every(id => 
-          compliance.some(c => c.id === parseInt(id))
-        );
-      }
-    }
-    
-    res.json(foods);
+    console.log("Report result:", rows);
+    res.json(rows);
   } catch (error) {
-    console.error('Get menu error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-/**
- * GET /api/restaurants/:restaurantId/pickup-slots
- * Get available pickup time slots for a restaurant on a specific date
- * Requires: Customer authentication
- */
-router.get('/:restaurantId/pickup-slots', authenticateToken, async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
-    const { date } = req.query;
-    
-    // Get slots with current booking counts
-    const [slots] = await pool.query(
-      `SELECT id, slot_start, slot_end, max_orders, 
-              (SELECT COUNT(*) FROM orders WHERE pickup_slot_id = ps.id AND status != 'cancelled') as current_orders,
-              (max_orders - (SELECT COUNT(*) FROM orders WHERE pickup_slot_id = ps.id AND status != 'cancelled')) as available_slots
-       FROM pickup_slots ps
-       WHERE restaurant_id = ? AND DATE(slot_start) = ? AND slot_start > NOW()
-       ORDER BY slot_start`,
-      [restaurantId, date]
-    );
-    
-    res.json(slots);
-  } catch (error) {
-    console.error('Get pickup slots error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error generating report:", error);
+    res.status(500).json({ error: "Failed to load report data" });
   }
 });
 
