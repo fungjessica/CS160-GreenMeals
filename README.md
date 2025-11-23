@@ -46,7 +46,7 @@ git checkout Master
 ### Step 2: Set Up MySQL Database
 
 Step 2.0 
-Make sure to go to CS160-GreenMeals/backend/database/cs160.sql
+Make sure to go to CS160-GreenMeals/backend/database
 
 #### 2.1 Start the MySQL Server
 
@@ -96,15 +96,16 @@ SHOW TABLES;
 
 ### Step 3: Configure Backend
 
-From the root directory (where `server.js` is located):
+Create new terminal and change to backend subfolder and install all packages in the backend folder:
 
 ```bash
+cd backend
 npm install
 ```
 
 #### 3.1 Update Database Credentials
 
-Open `/backend/config/database.js` and update:
+Open `/backend/config/database.js` and update your mysql password:
 
 ```javascript
 const pool = mysql.createPool({
@@ -119,7 +120,7 @@ const pool = mysql.createPool({
 
 ### Step 4: Configure Frontend
 
-Navigate to the frontend folder:
+Create new terminal and navigate to the frontend folder:
 
 ```bash
 cd too-good-to-go-frontend
@@ -162,7 +163,7 @@ You must run **both backend** and **frontend** servers.
 ### Terminal 1 – Backend
 
 ```bash
-cd CS160-GreenMeals
+cd backend
 npm start   # or node server.js
 ```
 
