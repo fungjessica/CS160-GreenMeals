@@ -356,5 +356,28 @@ router.get('/report', authenticateToken, async (req, res) => {
 //   }
 // });
 
+/**
+ * GET /api/restaurants/:id/pickup-slots
+ * Returns all pickup windows for a restaurant
+ * (Used by customer UI to show available pickup times)
+ */
+router.get('/:id/pickup-slots', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [slots] = await pool.query(
+      `SELECT id, slot_start, slot_end, max_orders
+       FROM pickup_slots
+       WHERE restaurant_id = ?
+       ORDER BY slot_start ASC`,
+      [id]
+    );
+
+    res.json(slots);
+  } catch (error) {
+    console.error("Error loading pickup slots:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 export default router;

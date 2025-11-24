@@ -96,7 +96,11 @@ const RestaurantDetailTab = ({ restaurant, token, addToCart, onBack }) => {
                 onClick={() =>
                   handleAddToCart({
                     ...food,
-                    specificPickup: restaurantSpecificPickup, 
+                    restaurant_id: restaurant?.id,
+                    restaurant_name: restaurant?.name,
+                    specificPickup: restaurantSpecificPickup,
+                    pickup_start: food.pickup_start,
+                    pickup_end: food.pickup_end,
                   })
                 }
                 className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"

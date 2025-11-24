@@ -317,7 +317,29 @@ useEffect(() => {
                    order.status === 'pending' &&
                    order.slot_start && order.slot_end && (
                     <div className="mt-1">
-                     
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Change pickup time:
+                      </label>
+                      <select
+                        className="border rounded-md px-2 py-1 text-sm"
+                        value={orderTimes[order.id] || ''}
+                        onChange={(e) => {
+                          handleOrderTimeChange(order.id, e.target.value);
+                          const updated = { ...orderTimes, [order.id]: e.target.value };
+                          localStorage.setItem('orderTimes', JSON.stringify(updated));
+                        }}
+                      >
+                        <option value="">Select time</option>
+                        {savedPickupWindows[order.id] &&
+                          generateTimeOptions(
+                            savedPickupWindows[order.id].start,
+                            savedPickupWindows[order.id].end
+                          ).map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                      </select>
                     </div>
                   )}
                 </div>
