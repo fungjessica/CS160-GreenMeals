@@ -282,10 +282,11 @@ const CustomerDashboard = ({ user, token, handleLogout }) => {
             
             {activeTab === 'restaurant-detail' && selectedRestaurant && (
               <RestaurantDetailTab 
-              restaurant={selectedRestaurant}
-              onBack={() => setActiveTab('search')}
-              token={token}
-              addToCart={addToCart}
+                restaurant={selectedRestaurant}
+                onBack={() => setActiveTab('search')}
+                token={token}
+                addToCart={addToCart}
+                userRestrictions={user.dietaryRestrictions || []}  // ← ADD THIS
               />
             )}
           </main>

@@ -41,22 +41,23 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
       });
       const data = await res.json();
       const restaurantsArray = Array.isArray(data)
-      ? data
-      : data.restaurants || data.businesses || [];
-    
+        ? data
+        : data.restaurants || data.businesses || [];
+      
       const taggedResults = restaurantsArray.map(r => ({
-      ...r,
-      source: 'database'
-    }));
-
-    setResults(taggedResults);
+        ...r,
+        source: 'database'
+      }));
+      
+      setResults(taggedResults);
     } catch (err) {
       console.error('Error searching restaurants:', err);
     } finally {
       setLoading(false);
     }
   };
-    // Leaflet icons
+  
+  // Leaflet icons
     const defaultIcon = new L.Icon({
       iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -80,30 +81,6 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
         shadowSize: [41, 41],
     });
 
-    const searchRestaurants = async (searchQuery) => {
-      if (!searchQuery) return;
-      
-      try {
-          // Build URL with dietary restrictions if enabled
-          let url = `${API_BASE_URL}/yelp/restaurants?q=${searchQuery}&lat=${center[0]}&lon=${center[1]}`;
-          
-          // Add dietary restriction filtering if enabled and user has restrictions
-          if (filterByRestrictions && userRestrictions.length > 0) {
-              const restrictionIds = userRestrictions.map(r => r.id).join(',');
-              url += `&restrictionIds=${restrictionIds}`;
-              console.log('Searching with restrictions:', restrictionIds);
-          }
-          
-          const response = await fetch(url, { 
-              headers: { 'Authorization': `Bearer ${token}` } 
-          });
-          const data = await response.json();
-          console.log('Search results:', data);
-          setRestaurants(data.businesses || []);
-      } catch (error) {
-          console.error('Error searching restaurants:', error);
-      }
-  };
     return (
       <div className="max-w-5xl mx-auto p-6">
         {/* Header */}
@@ -121,46 +98,7 @@ const SearchResTab = ({ token, handleRestaurantClick,userRestrictions = [] }) =>
             {showMap ? 'Show List' : 'Show Map'}
           </button>
         </div>
-        {/* Checkbox */}
-        <div
-            className="header-right"
-            style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            marginRight: '20px',
-            marginTop: '5px',
-            marginBottom: '10px',
-            }}
-        >
-            {userRestrictions.length > 0 && (
-            <label
-                style={{
-                color: 'black',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                }}
-            >
-                <input
-                type="checkbox"
-                checked={filterByRestrictions}
-                onChange={(e) => setFilterByRestrictions(e.target.checked)}
-                style={{
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer',
-                }}
-                />
-                <span>
-                Filter by my dietary restrictions ({userRestrictions.length})
-                </span>
-            </label>
-            )}
-        </div>
+      
         {/* Search Field */}
         <form onSubmit={handleSearch} className="flex gap-3 mb-6">
           <input
